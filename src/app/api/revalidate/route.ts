@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
 
+interface RevalidateBody {
+  path?: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    let body: any = {};
+    let body: RevalidateBody = {};
     try {
-      body = await req.json();
+      body = (await req.json()) as RevalidateBody;
     } catch {
       // Empty body is acceptable
     }
@@ -18,9 +22,10 @@ export async function POST(req: NextRequest) {
       path,
       timestamp: new Date().toISOString(),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to revalidate cache';
     return NextResponse.json(
-      { error: err?.message || 'Failed to revalidate cache' },
+      { error: message },
       { status: 500 }
     );
   }

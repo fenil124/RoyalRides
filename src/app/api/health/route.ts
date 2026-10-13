@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
         } else {
           dbStatus = 'connected';
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         clearTimeout(timeoutId);
-        dbStatus = err?.name === 'AbortError' ? 'timeout' : 'degraded';
+        dbStatus = err instanceof Error && err.name === 'AbortError' ? 'timeout' : 'degraded';
         if (isStrictReadiness) {
           isHealthy = false;
         }

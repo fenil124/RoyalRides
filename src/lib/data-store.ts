@@ -2,6 +2,11 @@
 
 import { Car, Route, Destination, Review, Inquiry, SiteSettings, HomepageSection, InquiryFormInput } from '@/types';
 import { supabase, isSupabaseConfigured } from './supabase/client';
+import type {
+  RealtimeChannel,
+  RealtimePostgresChangesPayload,
+  REALTIME_SUBSCRIBE_STATES,
+} from '@supabase/supabase-js';
 
 // Initial authoritative seed data
 const INITIAL_CARS: Car[] = [
@@ -855,7 +860,7 @@ export const DataStore = {
           console.warn('Supabase storage upload error:', error);
           throw new Error(error.message || 'Supabase storage upload failed');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.warn('Supabase storage upload error, falling back if demo mode:', err);
         if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
           throw err;
@@ -875,7 +880,7 @@ export const DataStore = {
   },
 
   // REALTIME SYNCHRONIZATION
-  subscribe(callback: (event: { type: string; key: string; table?: string; payload?: any }) => void): () => void {
+  subscribe(callback: (event: RealtimeEvent) => void): () => void {
     return RealtimeManager.getInstance().subscribe(callback);
   },
 
@@ -888,7 +893,7 @@ export type RealtimeEvent = {
   type: string;
   key: string;
   table?: string;
-  payload?: any;
+  payload?: RealtimePostgresChangesPayload<Record<string, unknown>> | Record<string, unknown> | null;
   timestamp?: number;
 };
 
@@ -898,7 +903,7 @@ class RealtimeManager {
   private static instance: RealtimeManager;
   private subscribers: Set<(event: RealtimeEvent) => void> = new Set();
   private broadcastChannel: BroadcastChannel | null = null;
-  private supabaseChannel: any = null;
+  private supabaseChannel: RealtimeChannel | null = null;
   private isInitialized = false;
   private status: 'connected' | 'connecting' | 'disconnected' | 'demo' = 'demo';
   private lastHiddenTime = 0;
@@ -1045,7 +1050,7 @@ class RealtimeManager {
         channel.on(
           'postgres_changes',
           { event: '*', schema: 'public', table },
-          (payload) => {
+          (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
             this.notify({
               type: 'SUPABASE_REALTIME',
               key,
@@ -1067,7 +1072,7 @@ class RealtimeManager {
         channel.on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'inquiries' },
-          (payload) => {
+          (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
             this.notify({
               type: 'SUPABASE_REALTIME',
               key: STORAGE_KEYS.INQUIRIES,
@@ -1079,7 +1084,7 @@ class RealtimeManager {
         );
       }
 
-      channel.subscribe((status) => {
+      channel.subscribe((status: `${REALTIME_SUBSCRIBE_STATES}`) => {
         if (status === 'SUBSCRIBED') {
           this.status = 'connected';
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
