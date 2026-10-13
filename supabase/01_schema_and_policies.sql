@@ -282,7 +282,7 @@ create policy "Users can update own profile"
   using (id = auth.uid())
   with check (
     id = auth.uid()
-    and role = (select p.role from public.profiles p where p.id = auth.uid())
+    and (role = 'customer' or public.is_admin())
   );
 
 -- Administrators can view and manage all profiles
@@ -520,9 +520,18 @@ create policy "Admins can insert inquiries"
 -- STORAGE BUCKET CONFIGURATION (travel-assets)
 -- ==============================================================================
 
-insert into storage.buckets (id, name, public)
-values ('travel-assets', 'travel-assets', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'travel-assets',
+  'travel-assets',
+  true,
+  52428800,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 52428800,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif'];
 
 drop policy if exists "Public Access travel-assets" on storage.objects;
 drop policy if exists "Public can view travel-assets" on storage.objects;
@@ -598,3 +607,7 @@ begin
   end loop;
 end;
 $$;
+
+-- 8. REFRESH SCHEMA CACHE
+-- Informs PostgREST to reload its cache so all newly created tables/columns are live immediately
+notify pgrst, 'reload schema';

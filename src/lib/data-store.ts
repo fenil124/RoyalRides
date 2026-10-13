@@ -440,14 +440,42 @@ export const DataStore = {
     setStorage(STORAGE_KEYS.CARS, cars);
 
     if (isSupabaseConfigured() && supabase) {
-      const { error } = await supabase.from('cars').upsert(updatedCar);
+      const isClientTempId = updatedCar.id.startsWith('car_');
+      const carPayload = {
+        ...(isClientTempId ? {} : { id: updatedCar.id }),
+        name: updatedCar.name,
+        car_type: updatedCar.car_type,
+        seating_capacity: updatedCar.seating_capacity,
+        image_url: updatedCar.image_url,
+        hero_image_url: updatedCar.hero_image_url,
+        is_active: updatedCar.is_active,
+        is_hero_featured: updatedCar.is_hero_featured,
+        display_order: updatedCar.display_order,
+      };
+
+      const { data, error } = await supabase
+        .from('cars')
+        .upsert(carPayload)
+        .select()
+        .single();
+
       if (error) {
         // Fallback retry if hero_image_url column is not yet present in Supabase
-        const { hero_image_url, ...fallbackCar } = updatedCar;
-        const { error: fallbackError } = await supabase.from('cars').upsert(fallbackCar);
+        const { hero_image_url, ...fallbackPayload } = carPayload;
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('cars')
+          .upsert(fallbackPayload)
+          .select()
+          .single();
         if (fallbackError) {
           throw new Error(fallbackError.message || 'Failed to save car to Supabase');
+        } else if (fallbackData?.id) {
+          updatedCar.id = fallbackData.id;
+          setStorage(STORAGE_KEYS.CARS, cars);
         }
+      } else if (data?.id) {
+        updatedCar.id = data.id;
+        setStorage(STORAGE_KEYS.CARS, cars);
       }
     }
     return updatedCar;
@@ -457,7 +485,9 @@ export const DataStore = {
     const cars = (await this.getCars()).filter((c) => c.id !== id);
     setStorage(STORAGE_KEYS.CARS, cars);
     if (isSupabaseConfigured() && supabase) {
-      await supabase.from('cars').delete().eq('id', id);
+      if (!id.startsWith('car_')) {
+        await supabase.from('cars').delete().eq('id', id);
+      }
     }
   },
 
@@ -737,7 +767,23 @@ export const DataStore = {
     setStorage(STORAGE_KEYS.INQUIRIES, inquiries);
 
     if (isSupabaseConfigured() && supabase) {
-      await supabase.from('inquiries').insert(newInquiry);
+      try {
+        const { id, ...inquiryPayload } = newInquiry;
+        const { data, error } = await supabase
+          .from('inquiries')
+          .insert(inquiryPayload)
+          .select()
+          .single();
+
+        if (!error && data?.id) {
+          newInquiry.id = data.id;
+          setStorage(STORAGE_KEYS.INQUIRIES, inquiries);
+        } else if (error) {
+          console.error('Supabase inquiry insert error:', error);
+        }
+      } catch (err) {
+        console.error('Supabase inquiry insert exception:', err);
+      }
     }
 
     return newInquiry;
@@ -782,7 +828,9 @@ export const DataStore = {
     const inquiries = (await this.getInquiries()).filter((i) => i.id !== id);
     setStorage(STORAGE_KEYS.INQUIRIES, inquiries);
     if (isSupabaseConfigured() && supabase) {
-      await supabase.from('inquiries').delete().eq('id', id);
+      if (!id.startsWith('inq_')) {
+        await supabase.from('inquiries').delete().eq('id', id);
+      }
     }
   },
 

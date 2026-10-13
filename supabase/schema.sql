@@ -1,9 +1,15 @@
 -- ==============================================================================
--- ROYALRIDES TRAVELS - DATABASE SCHEMA & SECURITY SETUP
--- File: supabase/schema.sql
+-- ROYALRIDES TRAVELS - CANONICAL DATABASE SCHEMA & SECURITY MIGRATION
+-- File: supabase/01_schema_and_policies.sql
 -- 
--- Canonical Migration: supabase/01_schema_and_policies.sql
--- (This file is maintained as a synchronized copy for Supabase CLI compatibility)
+-- Description:
+--   Primary canonical migration for RoyalRides Travels. Sets up all database
+--   extensions, tables, constraints, foreign keys, triggers, strict role-based
+--   Row Level Security (RLS) policies, storage bucket policies, and Realtime publications.
+--
+-- Execution:
+--   Run this file FIRST in Supabase SQL Editor (Dashboard > SQL Editor) on fresh
+--   or existing production databases. Idempotent and safe to rerun.
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -20,8 +26,12 @@ create table if not exists public.profiles (
   updated_at timestamptz default now()
 );
 
+-- Ensure default and constraints on existing instances
 alter table public.profiles alter column role set default 'customer';
 
+-- Secure Auth Signup Trigger:
+-- Automatically provisions a profile row on signup with default role 'customer'.
+-- NEVER assigns 'admin' automatically. Administrator roles must be provisioned explicitly.
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -42,6 +52,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- Secure Helper Function: Check if the calling user is an authorized administrator
 create or replace function public.is_admin()
 returns boolean as $$
 begin
@@ -58,8 +69,8 @@ $$ language plpgsql security definer set search_path = public;
 create table if not exists public.cars (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
-  car_type text not null,
-  seating_capacity text not null,
+  car_type text not null, -- MPV, Sedan, Luxury Van, SUV
+  seating_capacity text not null, -- e.g. "7+1 Seating", "4+1 Seating"
   image_url text not null,
   hero_image_url text,
   is_active boolean default true,
@@ -89,7 +100,7 @@ create table if not exists public.route_prices (
   id uuid primary key default uuid_generate_v4(),
   route_id uuid not null references public.routes(id) on delete cascade,
   car_id uuid not null references public.cars(id) on delete cascade,
-  price numeric(10,2),
+  price numeric(10,2), -- Nullable: when null, shows "Get a Quote"
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   constraint unique_route_car unique (route_id, car_id)
@@ -253,13 +264,17 @@ drop policy if exists "Users can view own profile" on public.profiles;
 drop policy if exists "Users can update own profile" on public.profiles;
 drop policy if exists "Admins manage all profiles" on public.profiles;
 
--- PROFILES
+-- ------------------------------------------------------------------------------
+-- A. PROFILES POLICIES
+-- ------------------------------------------------------------------------------
+-- Users can view only their own profile
 create policy "Users can view own profile"
   on public.profiles
   for select
   to authenticated
   using (id = auth.uid());
 
+-- Users can update only their own profile (name, avatar), but CANNOT elevate their own role
 create policy "Users can update own profile"
   on public.profiles
   for update
@@ -267,9 +282,10 @@ create policy "Users can update own profile"
   using (id = auth.uid())
   with check (
     id = auth.uid()
-    and role = (select p.role from public.profiles p where p.id = auth.uid())
+    and (role = 'customer' or public.is_admin())
   );
 
+-- Administrators can view and manage all profiles
 create policy "Admins manage all profiles"
   on public.profiles
   for all
@@ -277,7 +293,10 @@ create policy "Admins manage all profiles"
   using (public.is_admin())
   with check (public.is_admin());
 
--- CARS
+-- ------------------------------------------------------------------------------
+-- B. PUBLIC BROWSABLE CONTENT POLICIES (Cars, Routes, Prices, Destinations, Reviews, Content)
+-- ------------------------------------------------------------------------------
+-- Cars
 create policy "Public can view active cars"
   on public.cars
   for select
@@ -308,7 +327,7 @@ create policy "Admins can delete cars"
   to authenticated
   using (public.is_admin());
 
--- ROUTES
+-- Routes
 create policy "Public can view active routes"
   on public.routes
   for select
@@ -339,7 +358,7 @@ create policy "Admins can delete routes"
   to authenticated
   using (public.is_admin());
 
--- ROUTE PRICES
+-- Route Prices
 create policy "Public can view route prices"
   on public.route_prices
   for select
@@ -364,7 +383,7 @@ create policy "Admins can delete route prices"
   to authenticated
   using (public.is_admin());
 
--- DESTINATIONS
+-- Destinations
 create policy "Public can view published destinations"
   on public.destinations
   for select
@@ -395,7 +414,7 @@ create policy "Admins can delete destinations"
   to authenticated
   using (public.is_admin());
 
--- REVIEWS
+-- Reviews
 create policy "Public can view published reviews"
   on public.reviews
   for select
@@ -426,7 +445,7 @@ create policy "Admins can delete reviews"
   to authenticated
   using (public.is_admin());
 
--- SITE SETTINGS
+-- Site Settings
 create policy "Public can view site settings"
   on public.site_settings
   for select
@@ -439,7 +458,7 @@ create policy "Admins can update site settings"
   using (public.is_admin())
   with check (public.is_admin());
 
--- HOMEPAGE SECTIONS
+-- Homepage Sections
 create policy "Public can view homepage sections"
   on public.homepage_sections
   for select
@@ -452,7 +471,13 @@ create policy "Admins can update homepage sections"
   using (public.is_admin())
   with check (public.is_admin());
 
--- INQUIRIES
+-- ------------------------------------------------------------------------------
+-- C. CUSTOMER INQUIRIES POLICIES (Protected Customer Data)
+-- ------------------------------------------------------------------------------
+-- Public visitors can submit an inquiry:
+-- - status must be 'New'
+-- - internal staff notes MUST be null
+-- - agreed price MUST be null
 create policy "Public can submit inquiries"
   on public.inquiries
   for insert
@@ -462,6 +487,10 @@ create policy "Public can submit inquiries"
     and agreed_price is null
   );
 
+-- PUBLIC SELECT IS INTENTIONALLY OMITTED:
+-- Public visitors have ZERO read access to inquiries.
+
+-- Only verified administrators can view, update, delete, or manage inquiries
 create policy "Admins can view all inquiries"
   on public.inquiries
   for select
@@ -491,9 +520,18 @@ create policy "Admins can insert inquiries"
 -- STORAGE BUCKET CONFIGURATION (travel-assets)
 -- ==============================================================================
 
-insert into storage.buckets (id, name, public)
-values ('travel-assets', 'travel-assets', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'travel-assets',
+  'travel-assets',
+  true,
+  52428800,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 52428800,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif'];
 
 drop policy if exists "Public Access travel-assets" on storage.objects;
 drop policy if exists "Public can view travel-assets" on storage.objects;
@@ -540,6 +578,7 @@ alter table public.homepage_sections replica identity full;
 alter table public.site_settings replica identity full;
 alter table public.inquiries replica identity full;
 
+-- Safe idempotent addition to supabase_realtime publication
 do $$
 declare
   tbl text;
@@ -568,3 +607,7 @@ begin
   end loop;
 end;
 $$;
+
+-- 8. REFRESH SCHEMA CACHE
+-- Informs PostgREST to reload its cache so all newly created tables/columns are live immediately
+notify pgrst, 'reload schema';

@@ -21,17 +21,17 @@ export const AuthService = {
           .from('profiles')
           .select('full_name, role')
           .eq('id', data.session.user.id)
-          .single();
+          .maybeSingle();
 
-        // Deny admin session if user profile role is not 'admin'
-        if (profile && profile.role !== 'admin') {
+        // Strictly deny admin session if user profile does not exist or role is not 'admin'
+        if (!profile || profile.role !== 'admin') {
           return null;
         }
 
         return {
-          email: data.session.user.email || 'admin@gmail.com',
-          fullName: profile?.full_name || data.session.user.user_metadata?.full_name || 'Admin',
-          role: profile?.role || 'admin',
+          email: data.session.user.email || '',
+          fullName: profile.full_name || data.session.user.user_metadata?.full_name || 'Admin',
+          role: profile.role,
         };
       }
     }

@@ -1,9 +1,21 @@
 -- ==============================================================================
 -- ROYALRIDES TRAVELS - OPTIONAL CATALOG & DEMO SEED DATA
--- File: supabase/seed.sql
+-- File: supabase/02_seed_data.sql
 -- 
--- Canonical Seed Script: supabase/02_seed_data.sql
--- (This file is maintained as a synchronized copy for Supabase CLI compatibility)
+-- Description:
+--   Optional catalog seed script for initial testing or demonstration.
+--   Populates authoritative fleet vehicles, standard routes, verified pricing,
+--   destinations, default site settings, homepage sections, and clearly labeled
+--   demo reviews and demo inquiries.
+--
+-- Safety:
+--   Every INSERT uses "ON CONFLICT ... DO NOTHING". Running this script will
+--   NEVER overwrite existing customized production data, live inquiries, or
+--   prices modified in the admin panel.
+--
+-- Execution:
+--   OPTIONAL. Run this in Supabase SQL Editor ONLY if you wish to pre-populate
+--   sample data on a fresh database.
 -- ==============================================================================
 
 -- 1. SEED CARS (Fleet vehicles)
@@ -26,12 +38,14 @@ values
 on conflict (id) do nothing;
 
 -- 3. SEED ROUTE VEHICLE PRICES (Exact verified client rates)
+-- Surat -> Mumbai Airport: Swift Dzire: 7000, Ertiga: 8000, Innova: 13000, Urbania: null (Get a Quote)
 insert into public.route_prices (route_id, car_id, price)
 values
   ('r1111111-1111-1111-1111-111111111111', 'c3333333-3333-3333-3333-333333333333', 7000.00), -- Swift Dzire
   ('r1111111-1111-1111-1111-111111111111', 'c2222222-2222-2222-2222-222222222222', 8000.00), -- Ertiga
   ('r1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 13000.00), -- Innova
   ('r1111111-1111-1111-1111-111111111111', 'c4444444-4444-4444-4444-444444444444', null), -- Urbania (Quote)
+  -- Baseline rates for popular intercity routes
   ('r2222222-2222-2222-2222-222222222222', 'c2222222-2222-2222-2222-222222222222', 9500.00),
   ('r3333333-3333-3333-3333-333333333333', 'c3333333-3333-3333-3333-333333333333', 6000.00),
   ('r4444444-4444-4444-4444-444444444444', 'c1111111-1111-1111-1111-111111111111', 12000.00),
@@ -68,13 +82,13 @@ values
   ('in555555-5555-5555-5555-555555555555', '[Demo] Kunal Mehta', '9876765432', 'Surat', 'Mumbai', current_date + interval '10 days', '07:00 AM', 'Urbania Traveller', 'c4444444-4444-4444-4444-444444444444', 12, 'one-way', 'Confirmed', 'whatsapp')
 on conflict (id) do nothing;
 
--- 7. SEED SITE SETTINGS (Populated only if default row is absent)
+-- 7. SEED SITE SETTINGS (Defaults populated only if row does not exist)
 insert into public.site_settings (id, agency_name, tagline, phone, whatsapp, email, address, logo_url, cta_text)
 values
   ('default', 'RoyalRides Travels', 'Comfortable Rides for Every Journey', '+91 98765 43210', '+91 98765 43210', 'contact@royalridestravels.com', 'Ring Road, Surat, Gujarat 395002', null, 'Book Your Ride')
 on conflict (id) do nothing;
 
--- 8. SEED HOMEPAGE SECTIONS (Populated only if rows are absent)
+-- 8. SEED HOMEPAGE SECTIONS (Defaults populated only if row does not exist)
 insert into public.homepage_sections (id, title, subtitle, badge, body, image_url)
 values
   ('hero', 'Comfortable Rides for Every Journey', 'Airport Transfers, Outstation Trips, City Travel and More', 'PREMIUM CHAUFFEUR DRIVEN CAR RENTAL', 'Experience effortless, punctual, and safe road journeys with our professionally driven fleet of modern cars.', '/images/hero-bg.jpg'),
