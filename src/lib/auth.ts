@@ -17,10 +17,21 @@ export const AuthService = {
     if (isSupabaseConfigured() && supabase) {
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .eq('id', data.session.user.id)
+          .single();
+
+        // Deny admin session if user profile role is not 'admin'
+        if (profile && profile.role !== 'admin') {
+          return null;
+        }
+
         return {
           email: data.session.user.email || 'admin@gmail.com',
-          fullName: data.session.user.user_metadata?.full_name || 'Admin',
-          role: 'admin',
+          fullName: profile?.full_name || data.session.user.user_metadata?.full_name || 'Admin',
+          role: profile?.role || 'admin',
         };
       }
     }

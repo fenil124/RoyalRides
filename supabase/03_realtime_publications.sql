@@ -1,7 +1,16 @@
 -- ==============================================================================
--- ROYALRIDES TRAVELS - SUPABASE REALTIME PUBLICATIONS MIGRATION
--- Run this in Supabase SQL Editor (Dashboard > SQL Editor) to enable
--- live automatic synchronization across all public and admin views.
+-- ROYALRIDES TRAVELS - STANDALONE REALTIME PUBLICATIONS UTILITY
+-- File: supabase/03_realtime_publications.sql
+-- 
+-- Description:
+--   Independent utility script to configure full replica identity and enable
+--   Supabase Realtime publications across all application tables.
+--
+-- Note:
+--   The canonical migration (supabase/01_schema_and_policies.sql) ALREADY includes
+--   these commands. You only need to run this file if:
+--     1. You are retrofitting Realtime onto an existing pre-migrated database.
+--     2. You need to repair or verify Realtime publications without modifying schema.
 -- ==============================================================================
 
 -- 1. SET REPLICA IDENTITY FULL

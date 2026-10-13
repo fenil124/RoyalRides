@@ -1,6 +1,15 @@
 -- ==============================================================================
--- ROYALRIDES TRAVELS - SUPABASE COMPREHENSIVE SCHEMA & SECURITY SETUP
--- Run this script in the Supabase SQL Editor (Dashboard > SQL Editor)
+-- ROYALRIDES TRAVELS - CANONICAL DATABASE SCHEMA & SECURITY MIGRATION
+-- File: supabase/01_schema_and_policies.sql
+-- 
+-- Description:
+--   Primary canonical migration for RoyalRides Travels. Sets up all database
+--   extensions, tables, constraints, foreign keys, triggers, strict role-based
+--   Row Level Security (RLS) policies, storage bucket policies, and Realtime publications.
+--
+-- Execution:
+--   Run this file FIRST in Supabase SQL Editor (Dashboard > SQL Editor) on fresh
+--   or existing production databases. Idempotent and safe to rerun.
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -10,28 +19,51 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
-  full_name text default 'Admin',
+  full_name text default 'Customer',
   avatar_url text,
-  role text default 'admin',
+  role text not null default 'customer' check (role in ('admin', 'customer', 'staff')),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
--- Trigger to automatically create a profile record when a new user signs up in auth.users
+-- Ensure default and constraints on existing instances
+alter table public.profiles alter column role set default 'customer';
+
+-- Secure Auth Signup Trigger:
+-- Automatically provisions a profile row on signup with default role 'customer'.
+-- NEVER assigns 'admin' automatically. Administrator roles must be provisioned explicitly.
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, email, full_name, role)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', 'Admin'), 'admin')
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    'customer' -- SECURE: New users are always standard customers
+  )
   on conflict (id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Secure Helper Function: Check if the calling user is an authorized administrator
+create or replace function public.is_admin()
+returns boolean as $$
+begin
+  return exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and role = 'admin'
+  );
+end;
+$$ language plpgsql security definer set search_path = public;
 
 -- 3. CARS (Agency Fleet)
 create table if not exists public.cars (
@@ -48,7 +80,6 @@ create table if not exists public.cars (
   updated_at timestamptz default now()
 );
 
--- Ensure column exists if table was previously created
 alter table public.cars add column if not exists hero_image_url text;
 
 -- 4. ROUTES (Fixed Price & Intercity Routes)
@@ -153,6 +184,16 @@ create table if not exists public.homepage_sections (
   updated_at timestamptz default now()
 );
 
+-- 11. INDEXES FOR QUERY & RLS PERFORMANCE
+create index if not exists idx_profiles_role on public.profiles(role);
+create index if not exists idx_inquiries_status on public.inquiries(status);
+create index if not exists idx_inquiries_travel_date on public.inquiries(travel_date desc);
+create index if not exists idx_inquiries_created_at on public.inquiries(created_at desc);
+create index if not exists idx_cars_display_order on public.cars(display_order);
+create index if not exists idx_routes_display_order on public.routes(display_order);
+create index if not exists idx_destinations_display_order on public.destinations(display_order);
+create index if not exists idx_reviews_display_order on public.reviews(display_order);
+
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
@@ -167,75 +208,358 @@ alter table public.inquiries enable row level security;
 alter table public.site_settings enable row level security;
 alter table public.homepage_sections enable row level security;
 
--- Drop existing policies if re-running
+-- Drop legacy/broad policies
 drop policy if exists "Public can view active cars" on public.cars;
+drop policy if exists "Admins can view all cars" on public.cars;
+drop policy if exists "Admins full access cars" on public.cars;
+drop policy if exists "Admins can insert cars" on public.cars;
+drop policy if exists "Admins can update cars" on public.cars;
+drop policy if exists "Admins can delete cars" on public.cars;
+
 drop policy if exists "Public can view active routes" on public.routes;
+drop policy if exists "Admins can view all routes" on public.routes;
+drop policy if exists "Admins full access routes" on public.routes;
+drop policy if exists "Admins can insert routes" on public.routes;
+drop policy if exists "Admins can update routes" on public.routes;
+drop policy if exists "Admins can delete routes" on public.routes;
+
 drop policy if exists "Public can view route prices" on public.route_prices;
+drop policy if exists "Admins full access route_prices" on public.route_prices;
+drop policy if exists "Admins can insert route prices" on public.route_prices;
+drop policy if exists "Admins can update route prices" on public.route_prices;
+drop policy if exists "Admins can delete route prices" on public.route_prices;
+
 drop policy if exists "Public can view published destinations" on public.destinations;
+drop policy if exists "Admins can view all destinations" on public.destinations;
+drop policy if exists "Admins full access destinations" on public.destinations;
+drop policy if exists "Admins can insert destinations" on public.destinations;
+drop policy if exists "Admins can update destinations" on public.destinations;
+drop policy if exists "Admins can delete destinations" on public.destinations;
+
 drop policy if exists "Public can view published reviews" on public.reviews;
+drop policy if exists "Admins can view all reviews" on public.reviews;
+drop policy if exists "Admins full access reviews" on public.reviews;
+drop policy if exists "Admins can insert reviews" on public.reviews;
+drop policy if exists "Admins can update reviews" on public.reviews;
+drop policy if exists "Admins can delete reviews" on public.reviews;
+
 drop policy if exists "Public can view site settings" on public.site_settings;
+drop policy if exists "Admins full access site_settings" on public.site_settings;
+drop policy if exists "Admins can update site settings" on public.site_settings;
+
 drop policy if exists "Public can view homepage sections" on public.homepage_sections;
+drop policy if exists "Admins full access homepage_sections" on public.homepage_sections;
+drop policy if exists "Admins can update homepage sections" on public.homepage_sections;
+
 drop policy if exists "Public can insert inquiries" on public.inquiries;
+drop policy if exists "Public can submit inquiries" on public.inquiries;
+drop policy if exists "Admins full access inquiries" on public.inquiries;
+drop policy if exists "Admins can view all inquiries" on public.inquiries;
+drop policy if exists "Admins can insert inquiries" on public.inquiries;
+drop policy if exists "Admins can update inquiries" on public.inquiries;
+drop policy if exists "Admins can delete inquiries" on public.inquiries;
 
 drop policy if exists "Admins full access profiles" on public.profiles;
-drop policy if exists "Admins full access cars" on public.cars;
-drop policy if exists "Admins full access routes" on public.routes;
-drop policy if exists "Admins full access route_prices" on public.route_prices;
-drop policy if exists "Admins full access destinations" on public.destinations;
-drop policy if exists "Admins full access reviews" on public.reviews;
-drop policy if exists "Admins full access inquiries" on public.inquiries;
-drop policy if exists "Admins full access site_settings" on public.site_settings;
-drop policy if exists "Admins full access homepage_sections" on public.homepage_sections;
+drop policy if exists "Users can view own profile" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+drop policy if exists "Admins manage all profiles" on public.profiles;
 
--- Public read policies
-create policy "Public can view active cars" on public.cars for select using (is_active = true);
-create policy "Public can view active routes" on public.routes for select using (is_active = true);
-create policy "Public can view route prices" on public.route_prices for select using (true);
-create policy "Public can view published destinations" on public.destinations for select using (is_published = true);
-create policy "Public can view published reviews" on public.reviews for select using (is_published = true);
-create policy "Public can view site settings" on public.site_settings for select using (true);
-create policy "Public can view homepage sections" on public.homepage_sections for select using (true);
+-- ------------------------------------------------------------------------------
+-- A. PROFILES POLICIES
+-- ------------------------------------------------------------------------------
+-- Users can view only their own profile
+create policy "Users can view own profile"
+  on public.profiles
+  for select
+  to authenticated
+  using (id = auth.uid());
 
--- Public inquiry submission policy
-create policy "Public can insert inquiries" on public.inquiries for insert with check (status = 'New');
+-- Users can update only their own profile (name, avatar), but CANNOT elevate their own role
+create policy "Users can update own profile"
+  on public.profiles
+  for update
+  to authenticated
+  using (id = auth.uid())
+  with check (
+    id = auth.uid()
+    and role = (select p.role from public.profiles p where p.id = auth.uid())
+  );
 
--- Authenticated Admin full CRUD policies
-create policy "Admins full access profiles" on public.profiles for all to authenticated using (true) with check (true);
-create policy "Admins full access cars" on public.cars for all to authenticated using (true) with check (true);
-create policy "Admins full access routes" on public.routes for all to authenticated using (true) with check (true);
-create policy "Admins full access route_prices" on public.route_prices for all to authenticated using (true) with check (true);
-create policy "Admins full access destinations" on public.destinations for all to authenticated using (true) with check (true);
-create policy "Admins full access reviews" on public.reviews for all to authenticated using (true) with check (true);
-create policy "Admins full access inquiries" on public.inquiries for all to authenticated using (true) with check (true);
-create policy "Admins full access site_settings" on public.site_settings for all to authenticated using (true) with check (true);
-create policy "Admins full access homepage_sections" on public.homepage_sections for all to authenticated using (true) with check (true);
+-- Administrators can view and manage all profiles
+create policy "Admins manage all profiles"
+  on public.profiles
+  for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ------------------------------------------------------------------------------
+-- B. PUBLIC BROWSABLE CONTENT POLICIES (Cars, Routes, Prices, Destinations, Reviews, Content)
+-- ------------------------------------------------------------------------------
+-- Cars
+create policy "Public can view active cars"
+  on public.cars
+  for select
+  using (is_active = true);
+
+create policy "Admins can view all cars"
+  on public.cars
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can insert cars"
+  on public.cars
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "Admins can update cars"
+  on public.cars
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete cars"
+  on public.cars
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Routes
+create policy "Public can view active routes"
+  on public.routes
+  for select
+  using (is_active = true);
+
+create policy "Admins can view all routes"
+  on public.routes
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can insert routes"
+  on public.routes
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "Admins can update routes"
+  on public.routes
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete routes"
+  on public.routes
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Route Prices
+create policy "Public can view route prices"
+  on public.route_prices
+  for select
+  using (true);
+
+create policy "Admins can insert route prices"
+  on public.route_prices
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "Admins can update route prices"
+  on public.route_prices
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete route prices"
+  on public.route_prices
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Destinations
+create policy "Public can view published destinations"
+  on public.destinations
+  for select
+  using (is_published = true);
+
+create policy "Admins can view all destinations"
+  on public.destinations
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can insert destinations"
+  on public.destinations
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "Admins can update destinations"
+  on public.destinations
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete destinations"
+  on public.destinations
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Reviews
+create policy "Public can view published reviews"
+  on public.reviews
+  for select
+  using (is_published = true);
+
+create policy "Admins can view all reviews"
+  on public.reviews
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can insert reviews"
+  on public.reviews
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "Admins can update reviews"
+  on public.reviews
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete reviews"
+  on public.reviews
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+-- Site Settings
+create policy "Public can view site settings"
+  on public.site_settings
+  for select
+  using (true);
+
+create policy "Admins can update site settings"
+  on public.site_settings
+  for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- Homepage Sections
+create policy "Public can view homepage sections"
+  on public.homepage_sections
+  for select
+  using (true);
+
+create policy "Admins can update homepage sections"
+  on public.homepage_sections
+  for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ------------------------------------------------------------------------------
+-- C. CUSTOMER INQUIRIES POLICIES (Protected Customer Data)
+-- ------------------------------------------------------------------------------
+-- Public visitors can submit an inquiry:
+-- - status must be 'New'
+-- - internal staff notes MUST be null
+-- - agreed price MUST be null
+create policy "Public can submit inquiries"
+  on public.inquiries
+  for insert
+  with check (
+    status = 'New'
+    and internal_notes is null
+    and agreed_price is null
+  );
+
+-- PUBLIC SELECT IS INTENTIONALLY OMITTED:
+-- Public visitors have ZERO read access to inquiries.
+
+-- Only verified administrators can view, update, delete, or manage inquiries
+create policy "Admins can view all inquiries"
+  on public.inquiries
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can update inquiries"
+  on public.inquiries
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admins can delete inquiries"
+  on public.inquiries
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+create policy "Admins can insert inquiries"
+  on public.inquiries
+  for insert
+  to authenticated
+  with check (public.is_admin());
 
 -- ==============================================================================
--- STORAGE BUCKET CONFIGURATION (for car photos and destination assets)
+-- STORAGE BUCKET CONFIGURATION (travel-assets)
 -- ==============================================================================
+
 insert into storage.buckets (id, name, public)
 values ('travel-assets', 'travel-assets', true)
 on conflict (id) do nothing;
 
 drop policy if exists "Public Access travel-assets" on storage.objects;
-create policy "Public Access travel-assets" on storage.objects for select
-using (bucket_id = 'travel-assets');
+drop policy if exists "Public can view travel-assets" on storage.objects;
+create policy "Public can view travel-assets"
+  on storage.objects
+  for select
+  using (bucket_id = 'travel-assets');
 
 drop policy if exists "Admin Upload travel-assets" on storage.objects;
-create policy "Admin Upload travel-assets" on storage.objects for insert to authenticated
-with check (bucket_id = 'travel-assets');
+drop policy if exists "Admins can upload travel-assets" on storage.objects;
+create policy "Admins can upload travel-assets"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'travel-assets' and public.is_admin());
 
 drop policy if exists "Admin Update travel-assets" on storage.objects;
-create policy "Admin Update travel-assets" on storage.objects for update to authenticated
-using (bucket_id = 'travel-assets');
+drop policy if exists "Admins can update travel-assets" on storage.objects;
+create policy "Admins can update travel-assets"
+  on storage.objects
+  for update
+  to authenticated
+  using (bucket_id = 'travel-assets' and public.is_admin())
+  with check (bucket_id = 'travel-assets' and public.is_admin());
 
 drop policy if exists "Admin Delete travel-assets" on storage.objects;
-create policy "Admin Delete travel-assets" on storage.objects for delete to authenticated
-using (bucket_id = 'travel-assets');
+drop policy if exists "Admins can delete travel-assets" on storage.objects;
+create policy "Admins can delete travel-assets"
+  on storage.objects
+  for delete
+  to authenticated
+  using (bucket_id = 'travel-assets' and public.is_admin());
 
 -- ==============================================================================
 -- REALTIME CONFIGURATION
 -- ==============================================================================
+
 alter table public.cars replica identity full;
 alter table public.routes replica identity full;
 alter table public.route_prices replica identity full;
@@ -245,26 +569,32 @@ alter table public.homepage_sections replica identity full;
 alter table public.site_settings replica identity full;
 alter table public.inquiries replica identity full;
 
--- Add all tables to supabase_realtime publication
+-- Safe idempotent addition to supabase_realtime publication
 do $$
 declare
   tbl text;
 begin
-  for tbl in select unnest(array['cars', 'routes', 'route_prices', 'destinations', 'reviews', 'homepage_sections', 'site_settings', 'inquiries'])
+  for tbl in select unnest(array[
+    'cars',
+    'routes',
+    'route_prices',
+    'destinations',
+    'reviews',
+    'homepage_sections',
+    'site_settings',
+    'inquiries'
+  ])
   loop
     if not exists (
-      select 1 from pg_publication_tables
-      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = tbl
+      select 1
+      from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = tbl
     ) then
       execute format('alter publication supabase_realtime add table public.%I', tbl);
+      raise notice 'Added table % to supabase_realtime publication', tbl;
     end if;
   end loop;
 end;
 $$;
-
--- Performance indexes
-create index if not exists idx_inquiries_status on public.inquiries(status);
-create index if not exists idx_inquiries_travel_date on public.inquiries(travel_date desc);
-create index if not exists idx_inquiries_created_at on public.inquiries(created_at desc);
-create index if not exists idx_cars_display_order on public.cars(display_order);
-create index if not exists idx_routes_display_order on public.routes(display_order);
