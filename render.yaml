@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: royalrides-travels
+    runtime: node
+    plan: starter # Render paid instance recommended for 24/7 SLA; free instances spin down after 15m
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: NEXT_PUBLIC_DEMO_MODE
+        value: "false" # Set to "true" for offline fallback demo mode, "false" for live Supabase
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
