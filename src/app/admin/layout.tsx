@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AuthService, AdminUser } from '@/lib/auth';
+import { Outlet } from 'react-router-dom';
 import { X } from 'lucide-react';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -82,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
           )}
-          {children}
+          {children ?? <Outlet />}
         </main>
       </div>
     </div>

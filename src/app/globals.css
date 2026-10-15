@@ -2,8 +2,8 @@
 
 @layer base {
   :root {
-    --font-sans: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-script: var(--font-script), 'Great Vibes', cursive;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-script: 'Great Vibes', cursive;
     --primary-navy: #071A35;
     --dark-navy: #0A1B36;
     --accent-gold: #F5B936;
