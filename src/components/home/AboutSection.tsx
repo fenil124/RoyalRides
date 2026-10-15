@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
+import Image from '@/components/common/Image';
 import { motion } from 'framer-motion';
 import { ShieldCheck, UserCheck, CalendarCheck, ArrowRight } from 'lucide-react';
 import { HomepageSection, SiteSettings } from '@/types';
@@ -134,13 +133,13 @@ export function AboutSection({ content }: AboutSectionProps) {
 
             {/* Gold 'Explore Our Fleet' Button */}
             <div className="mt-7 sm:mt-8">
-              <Link
+              <a
                 href="#fleet"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F5B936] hover:bg-[#E5A928] text-[#081A33] text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
               >
                 <span>Explore Our Fleet</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-              </Link>
+              </a>
             </div>
           </motion.div>
         </div>

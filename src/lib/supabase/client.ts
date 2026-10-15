@@ -1,8 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 const getEnv = (key: string, nextKey?: string): string => {
-  const metaEnv = typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env : {};
-  const procEnv = typeof process !== 'undefined' && process.env ? process.env : {};
+  const metaEnv = (typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env : {}) as Record<string, string | undefined>;
+  const procEnv = (typeof process !== 'undefined' && process.env ? process.env : {}) as Record<string, string | undefined>;
   return (
     metaEnv[key] ||
     (nextKey ? metaEnv[nextKey] : '') ||

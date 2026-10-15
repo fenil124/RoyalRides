@@ -1,7 +1,4 @@
-'use client';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Inbox,
@@ -35,7 +32,7 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   const handleLogout = async () => {
     await AuthService.logout();
@@ -47,7 +44,7 @@ export function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
       <div>
         {/* Brand Logo */}
         <div className="px-6 py-6 border-b border-slate-800/80 flex items-center justify-center">
-          <Link href="/admin" className="flex items-center">
+          <Link to="/admin" className="flex items-center">
             <Logo variant="dark" size="sm" />
           </Link>
         </div>
@@ -60,7 +57,7 @@ export function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 onClick={onCloseMobile}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   isActive
@@ -79,7 +76,7 @@ export function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
       {/* Bottom actions: Public Site link & Logout */}
       <div className="p-4 border-t border-slate-800/80 space-y-1.5">
         <Link
-          href="/"
+          to="/"
           target="_blank"
           className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
         >

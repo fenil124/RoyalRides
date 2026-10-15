@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 
@@ -43,20 +43,20 @@ export function Header({ onOpenInquiry }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12">
           {/* Logo on the left */}
-          <Link href="/" className="flex items-center group">
+          <Link to="/" className="flex items-center group">
             <Logo variant="dark" size="sm" />
           </Link>
 
           {/* Navigation links in the center */}
           <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-white/90">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.label}
                 href={link.href}
                 className="hover:text-[#F5B936] transition-colors py-1 text-slate-200"
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
@@ -98,14 +98,14 @@ export function Header({ onOpenInquiry }: HeaderProps) {
         <div className="lg:hidden bg-[#071A35]/98 backdrop-blur-xl border-b border-white/10 px-6 py-5 space-y-4 animate-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col space-y-2 text-sm font-semibold text-white">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-2 text-slate-200 hover:text-[#F5B936] border-b border-white/5 transition-colors"
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
           </div>
 

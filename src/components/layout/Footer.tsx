@@ -1,6 +1,4 @@
-'use client';
-
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { MapPin, Phone, MessageSquare, Mail } from 'lucide-react';
 import { SiteSettings } from '@/types';
 import { Logo } from '@/components/common/Logo';
@@ -46,7 +44,7 @@ export function Footer({ settings }: FooterProps) {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Left: Brand Logo + Divider + Quick Contact Info matching Reference 2 */}
           <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-            <Link href="/" className="shrink-0">
+            <Link to="/" className="shrink-0">
               <Logo variant="dark" size="sm" />
             </Link>
 
@@ -84,27 +82,27 @@ export function Footer({ settings }: FooterProps) {
           <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-7">
             {/* Nav Links */}
             <nav className="flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-slate-300">
-              <Link href="#home" className="hover:text-white transition-colors">
+              <a href="#home" className="hover:text-white transition-colors">
                 Home
-              </Link>
-              <Link href="#about" className="hover:text-white transition-colors">
+              </a>
+              <a href="#about" className="hover:text-white transition-colors">
                 About Us
-              </Link>
-              <Link href="#fleet" className="hover:text-white transition-colors">
+              </a>
+              <a href="#fleet" className="hover:text-white transition-colors">
                 Our Fleet
-              </Link>
-              <Link href="#routes" className="hover:text-white transition-colors">
+              </a>
+              <a href="#routes" className="hover:text-white transition-colors">
                 Popular Routes
-              </Link>
-              <Link href="#destinations" className="hover:text-white transition-colors">
+              </a>
+              <a href="#destinations" className="hover:text-white transition-colors">
                 Destinations
-              </Link>
-              <Link href="#reviews" className="hover:text-white transition-colors">
+              </a>
+              <a href="#reviews" className="hover:text-white transition-colors">
                 Reviews
-              </Link>
-              <Link href="#inquiry" className="hover:text-white transition-colors">
+              </a>
+              <a href="#inquiry" className="hover:text-white transition-colors">
                 Contact
-              </Link>
+              </a>
             </nav>
 
             {/* Circular Social Icons */}

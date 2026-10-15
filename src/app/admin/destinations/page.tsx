@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Image from 'next/image';
+import Image from '@/components/common/Image';
 import { Plus, Edit, Trash2, X, AlertCircle, Loader2, Upload, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataStore } from '@/lib/data-store';

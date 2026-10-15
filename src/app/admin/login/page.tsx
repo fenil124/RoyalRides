@@ -1,14 +1,12 @@
-'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import Image from '@/components/common/Image';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 import { AuthService } from '@/lib/auth';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('admin@gmail.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +22,7 @@ export default function AdminLoginPage() {
     setIsLoading(false);
 
     if (result.success) {
-      router.push('/admin');
+      navigate('/admin');
     } else {
       setErrorMsg(result.error || 'Failed to sign in');
     }

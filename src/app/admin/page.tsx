@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   Inbox,
   Clock,
@@ -404,7 +402,7 @@ function AdminDashboardOverview() {
                 </p>
               </div>
               <Link
-                href="/admin/inquiries"
+                to="/admin/inquiries"
                 className="text-xs font-bold text-[#0B2C50] hover:text-[#F5B936] inline-flex items-center gap-1 transition-colors"
               >
                 <span>View All</span>
@@ -451,7 +449,7 @@ function AdminDashboardOverview() {
 
           <div className="pt-4 border-t border-[#F2F4F7] mt-2">
             <Link
-              href="/admin/inquiries"
+              to="/admin/inquiries"
               className="w-full py-2.5 rounded-xl bg-[#F5F8FC] hover:bg-slate-100 text-[#0B2C50] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
             >
               <span>Manage All Inquiries ({inquiries.length})</span>

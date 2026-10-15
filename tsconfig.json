@@ -13,12 +13,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
-      "next/image": ["./src/lib/adapters/next-image.tsx"],
-      "next/link": ["./src/lib/adapters/next-link.tsx"],
-      "next/navigation": ["./src/lib/adapters/next-navigation.ts"],
-      "next/font/google": ["./src/lib/adapters/next-font.ts"],
-      "next/cache": ["./src/lib/adapters/next-cache.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "vite.config.ts"],

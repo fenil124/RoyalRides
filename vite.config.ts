@@ -11,11 +11,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        'next/image': path.resolve(__dirname, './src/lib/adapters/next-image.tsx'),
-        'next/link': path.resolve(__dirname, './src/lib/adapters/next-link.tsx'),
-        'next/navigation': path.resolve(__dirname, './src/lib/adapters/next-navigation.ts'),
-        'next/font/google': path.resolve(__dirname, './src/lib/adapters/next-font.ts'),
-        'next/cache': path.resolve(__dirname, './src/lib/adapters/next-cache.ts'),
       },
     },
     define: {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { Phone, MessageCircle, HelpCircle, X } from 'lucide-react';
 import { SiteSettings } from '@/types';
 import { getWhatsAppUrl, getTelUrl } from '@/lib/utils';
@@ -12,7 +12,7 @@ interface FloatingContactWidgetProps {
 
 export function FloatingContactWidget({ settings }: FloatingContactWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   // Hide on admin routes and admin login
   if (pathname?.startsWith('/admin')) {

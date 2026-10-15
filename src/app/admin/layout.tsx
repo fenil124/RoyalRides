@@ -1,16 +1,13 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AuthService, AdminUser } from '@/lib/auth';
-import { Outlet } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children?: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -26,14 +23,14 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
 
       const session = await AuthService.getSession();
       if (!session) {
-        router.push('/admin/login');
+        navigate('/admin/login');
       } else {
         setUser(session);
         setIsCheckingAuth(false);
       }
     }
     check();
-  }, [pathname, isLoginPage, router]);
+  }, [pathname, isLoginPage, navigate]);
 
   if (isLoginPage) {
     return <>{children}</>;

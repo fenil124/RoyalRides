@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
+import Image from '@/components/common/Image';
 import { Edit, Save, CheckCircle2, X } from 'lucide-react';
 import { DataStore } from '@/lib/data-store';
 import { HomepageSection } from '@/types';

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from '@/components/common/Image';
 import { motion, type Variants } from 'framer-motion';
 import { Users, Shield, Sparkles, ArrowRight } from 'lucide-react';
 import { Car } from '@/types';

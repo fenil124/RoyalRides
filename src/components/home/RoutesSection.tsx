@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from '@/components/common/Image';
 import { motion } from 'framer-motion';
 import { MapPin, ChevronRight, ArrowRight } from 'lucide-react';
 import { Route, Car } from '@/types';

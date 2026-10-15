@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Menu, Bell, Shield, Radio } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { DataStore } from '@/lib/data-store';
 
 interface AdminHeaderProps {
@@ -81,7 +81,7 @@ export function AdminHeader({ onToggleSidebar, adminEmail = 'admin@gmail.com', a
 
         {/* User profile capsule */}
         <Link
-          href="/admin/profile"
+          to="/admin/profile"
           className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
         >
           <div className="w-8 h-8 rounded-full bg-[#0B2C50] text-[#F5B936] font-bold text-xs flex items-center justify-center">
