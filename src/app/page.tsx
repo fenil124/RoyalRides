@@ -96,7 +96,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* 1. Sticky Header Navbar with gold Book Now button */}
-      <Header onOpenInquiry={handleOpenGeneralInquiry} />
+      <Header onOpenInquiry={handleOpenGeneralInquiry} logoUrl={settings?.logo_url} />
 
       <main className="flex-1">
         {/* 2. Cinematic Hero Section with 2.5s continuous showcase */}
@@ -111,6 +111,7 @@ export default function HomePage() {
         <FleetSection
           cars={cars}
           onSelectCar={handleSelectCar}
+          settings={settings}
         />
 
         {/* 4. Complete About Us Section */}

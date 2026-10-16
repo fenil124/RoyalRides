@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Car, HomepageSection, SiteSettings } from '@/types';
+import { DEFAULT_HERO_BG, VEHICLE_IMAGES } from '@/lib/constants/default-images';
 
 // Canonical showcase vehicles matching Reference 1 & 2
 const SHOWCASE_VEHICLES = [
@@ -19,8 +20,8 @@ const SHOWCASE_VEHICLES = [
     id: 'c2222222-2222-2222-2222-222222222222',
     name: 'Ertiga',
     fullName: 'Maruti Suzuki Ertiga',
-    image: '/images/cars/ertiga-transparent.png',
-    fallbackImage: '/images/cars/ertiga.jpg',
+    image: VEHICLE_IMAGES['ertiga'].transparent,
+    fallbackImage: VEHICLE_IMAGES['ertiga'].primary,
     seating: '6+1 Seating',
     type: 'MPV',
   },
@@ -28,8 +29,8 @@ const SHOWCASE_VEHICLES = [
     id: 'c1111111-1111-1111-1111-111111111111',
     name: 'Innova',
     fullName: 'Toyota Innova Crysta',
-    image: '/images/cars/innova-transparent.png',
-    fallbackImage: '/images/cars/innova.jpg',
+    image: VEHICLE_IMAGES['innova'].transparent,
+    fallbackImage: VEHICLE_IMAGES['innova'].primary,
     seating: '7+1 Seating',
     type: 'MPV',
   },
@@ -37,8 +38,8 @@ const SHOWCASE_VEHICLES = [
     id: 'c3333333-3333-3333-3333-333333333333',
     name: 'Swift Dzire',
     fullName: 'Maruti Suzuki Swift Dzire',
-    image: '/images/cars/swift-dzire-transparent.png',
-    fallbackImage: '/images/cars/swift-dzire.jpg',
+    image: VEHICLE_IMAGES['swift-dzire'].transparent,
+    fallbackImage: VEHICLE_IMAGES['swift-dzire'].primary,
     seating: '4+1 Seating',
     type: 'Sedan',
   },
@@ -46,8 +47,8 @@ const SHOWCASE_VEHICLES = [
     id: 'c4444444-4444-4444-4444-444444444444',
     name: 'Urbania Traveller',
     fullName: 'Force Urbania Luxury Van',
-    image: '/images/cars/urbania-transparent.png',
-    fallbackImage: '/images/cars/urbania.jpg',
+    image: VEHICLE_IMAGES['urbania'].transparent,
+    fallbackImage: VEHICLE_IMAGES['urbania'].primary,
     seating: '12+1 Seating',
     type: 'Luxury Van',
   },
@@ -66,6 +67,7 @@ export function HeroShowcase({ cars = [], content, onBookClick }: HeroShowcasePr
     const dbCar =
       cars.find((c) => c.id === canonical.id) ||
       cars.find((c) => c.name.toLowerCase() === canonical.name.toLowerCase()) ||
+      cars.find((c) => c.slug && canonical.name.toLowerCase().includes(c.slug.toLowerCase())) ||
       cars.find((c) => c.name.toLowerCase().includes(canonical.name.toLowerCase().split(' ')[0]));
 
     if (!dbCar) return canonical;
@@ -74,6 +76,8 @@ export function HeroShowcase({ cars = [], content, onBookClick }: HeroShowcasePr
       ...canonical,
       name: dbCar.name || canonical.name,
       fullName: dbCar.name || canonical.fullName,
+      seating: dbCar.seating_capacity || canonical.seating,
+      type: dbCar.category || dbCar.car_type || canonical.type,
       image: dbCar.hero_image_url || dbCar.image_url || canonical.image,
     };
   });
@@ -148,11 +152,12 @@ export function HeroShowcase({ cars = [], content, onBookClick }: HeroShowcasePr
       {/* 1. Cinematic Sunset City & Airport Background */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/images/hero-bg.jpg"
+          src={content?.image_url || DEFAULT_HERO_BG}
           alt="RoyalRides Sunset Airport and City Horizon"
           fill
           priority
           sizes="100vw"
+          unoptimized={Boolean((content?.image_url || DEFAULT_HERO_BG).startsWith('http') || (content?.image_url || DEFAULT_HERO_BG).startsWith('data:'))}
           className="object-cover object-center"
         />
         {/* Navy ambient gradients blending with brand aesthetic */}

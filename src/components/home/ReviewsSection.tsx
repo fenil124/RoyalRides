@@ -147,8 +147,12 @@ export function ReviewsSection({ reviews, onReviewSubmitted }: ReviewsSectionPro
               >
                 <div>
                   <div className="flex items-center gap-3.5 mb-3.5">
-                    <div className="w-10 h-10 rounded-full bg-[#081A33] text-[#F5B936] font-extrabold text-sm flex items-center justify-center shrink-0">
-                      {rev.customer_name.charAt(0)}
+                    <div className="w-10 h-10 rounded-full bg-[#081A33] text-[#F5B936] font-extrabold text-sm flex items-center justify-center shrink-0 overflow-hidden">
+                      {rev.avatar_url ? (
+                        <img src={rev.avatar_url} alt={rev.customer_name} className="w-full h-full object-cover" />
+                      ) : (
+                        rev.customer_name.charAt(0)
+                      )}
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-[#081A33]">{rev.customer_name}</h3>
@@ -180,8 +184,12 @@ export function ReviewsSection({ reviews, onReviewSubmitted }: ReviewsSectionPro
                   <div>
                     {/* Customer Header */}
                     <div className="flex items-center gap-3.5 mb-3.5">
-                      <div className="w-11 h-11 rounded-full bg-[#081A33] text-[#F5B936] font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
-                        {rev.customer_name.charAt(0)}
+                      <div className="w-11 h-11 rounded-full bg-[#081A33] text-[#F5B936] font-black text-sm flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        {rev.avatar_url ? (
+                          <img src={rev.avatar_url} alt={rev.customer_name} className="w-full h-full object-cover" />
+                        ) : (
+                          rev.customer_name.charAt(0)
+                        )}
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-[#081A33]">{rev.customer_name}</h3>

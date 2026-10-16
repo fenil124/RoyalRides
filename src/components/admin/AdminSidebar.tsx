@@ -18,7 +18,7 @@ import { AuthService } from '@/lib/auth';
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Inquiries', href: '/admin/inquiries', icon: Inbox },
-  { label: 'Cars', href: '/admin/cars', icon: Car },
+  { label: 'Vehicles', href: '/admin/vehicles', icon: Car, aliases: ['/admin/cars'] },
   { label: 'Routes & Pricing', href: '/admin/routes', icon: Map },
   { label: 'Destinations', href: '/admin/destinations', icon: Compass },
   { label: 'Reviews', href: '/admin/reviews', icon: Star },
@@ -53,7 +53,7 @@ export function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
         <nav className="p-3.5 space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.aliases && item.aliases.includes(pathname));
             return (
               <Link
                 key={item.href}

@@ -4,9 +4,10 @@ interface LogoProps {
   variant?: 'light' | 'dark';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  logoUrl?: string | null;
 }
 
-export function Logo({ variant = 'dark', size = 'md', className = '' }: LogoProps) {
+export function Logo({ variant = 'dark', size = 'md', className = '', logoUrl }: LogoProps) {
   // variant="dark" means on a dark background (white Royal + gold Rides + white TRAVELS)
   // variant="light" means on a light background (navy Royal + gold Rides + navy/slate TRAVELS)
   const isDark = variant === 'dark';
@@ -22,6 +23,19 @@ export function Logo({ variant = 'dark', size = 'md', className = '' }: LogoProp
   };
 
   const currentSize = sizes[size];
+
+  if (logoUrl) {
+    return (
+      <div className={`inline-flex items-center justify-center select-none ${className}`}>
+        <img
+          src={logoUrl}
+          alt="RoyalRides Travels"
+          style={{ maxHeight: currentSize.height }}
+          className="w-auto object-contain"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`inline-flex flex-col items-center select-none ${className}`}>

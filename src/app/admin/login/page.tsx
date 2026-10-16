@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 import { AuthService } from '@/lib/auth';
+import { DEFAULT_HERO_BG } from '@/lib/constants/default-images';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -33,11 +34,12 @@ export default function AdminLoginPage() {
       {/* Background Scenic Road & Car Image matching Reference 3 */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/images/hero-bg.jpg"
+          src={DEFAULT_HERO_BG}
           alt="Scenic Travel Road"
           fill
           priority
           sizes="100vw"
+          unoptimized
           className="object-cover"
         />
         <div className="absolute inset-0 bg-[#071A2D]/50 backdrop-blur-[2px]" />

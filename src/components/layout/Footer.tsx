@@ -45,7 +45,7 @@ export function Footer({ settings }: FooterProps) {
           {/* Left: Brand Logo + Divider + Quick Contact Info matching Reference 2 */}
           <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
             <Link to="/" className="shrink-0">
-              <Logo variant="dark" size="sm" />
+              <Logo variant="dark" size="sm" logoUrl={settings?.logo_url} />
             </Link>
 
             {/* Subtle Vertical Divider on Desktop */}

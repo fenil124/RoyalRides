@@ -7,38 +7,186 @@ import type {
   RealtimePostgresChangesPayload,
   REALTIME_SUBSCRIBE_STATES,
 } from '@supabase/supabase-js';
+import {
+  DEFAULT_HERO_BG,
+  DEFAULT_AIRPORT_TRANSFER,
+  DEFAULT_ABOUT_IMG,
+  DESTINATION_IMAGES,
+  VEHICLE_IMAGES,
+  migrateLegacyImagePath,
+} from './constants/default-images';
 
-// Initial authoritative seed data
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+// Initial authoritative seed data with complete fleet details matching references
 const INITIAL_CARS: Car[] = [
   {
-    id: 'c2222222-2222-2222-2222-222222222222',
-    name: 'Ertiga',
+    id: 'c1111111-1111-1111-1111-111111111111',
+    name: 'Toyota Innova Crysta',
+    slug: 'innova',
+    manufacturer: 'Toyota',
+    model: 'Innova Crysta',
     car_type: 'MPV',
-    seating_capacity: '6+1 Seating',
-    image_url: '/images/cars/ertiga-transparent.png',
-    hero_image_url: '/images/cars/ertiga-transparent.png',
+    category: 'MPV',
+    seating_capacity: '7 Seats',
+    image_url: VEHICLE_IMAGES['innova'].transparent,
+    hero_image_url: VEHICLE_IMAGES['innova'].transparent,
+    gallery_images: VEHICLE_IMAGES['innova'].gallery,
+    badge: 'MOST POPULAR',
+    rating: 4.9,
+    review_count: '1,450+',
+    completed_tours: '1,450+ Completed Tours',
+    tagline: 'TOYOTA • LUXURY MPV EDITION',
+    short_description: 'The undisputed highway king for comfortable family and executive travel.',
+    description: 'The Toyota Innova Crysta offers unmatched comfort, robust highway performance, and premium leather captain seating. Perfect for long outstation tours and airport journeys.',
+    outstation_price_per_km: 18,
+    daily_package_price: 4500,
+    min_km_per_day: 'Min. 250-300 kms/day',
+    package_hours: '8 Hours',
+    package_included_km: '80 km Included',
+    driver_allowance: 300,
+    extra_km_charge: 18,
+    extra_hour_charge: 200,
+    fuel_type: 'Diesel',
+    transmission: 'Automatic',
+    engine: '2.4L GD Turbo Diesel',
+    horsepower: '148 HP',
+    max_speed: '180 km/h',
+    driver_option: 'Chauffeur / Self-Drive',
+    luggage_capacity: '3-4 Large Trolleys',
+    highlights: [
+      'Ideal for Surat - Mumbai & Udaipur road trips',
+      'Spacious cabin with rear AC vents',
+      'Reclining middle row captain seats',
+    ],
+    key_features: [
+      'Uniformed, commercial license verified highway chauffeur',
+      'Automated Expressway Fastag pass - Zero roadside stops',
+      '100% Sanitized cabin - Chilled mineral water included',
+    ],
+    amenities: [
+      'Captain Reclining Seats',
+      'Dual Air Conditioning',
+      'Fast USB Chargers',
+      'Spacious Luggage Boot',
+      'Professional Highway Chauffeur',
+      'Bluetooth Audio System',
+    ],
     is_active: true,
     is_hero_featured: true,
     display_order: 1,
   },
   {
-    id: 'c1111111-1111-1111-1111-111111111111',
-    name: 'Innova',
+    id: 'c2222222-2222-2222-2222-222222222222',
+    name: 'Maruti Suzuki Ertiga',
+    slug: 'ertiga',
+    manufacturer: 'Maruti Suzuki',
+    model: 'Ertiga',
     car_type: 'MPV',
-    seating_capacity: '7+1 Seating',
-    image_url: '/images/cars/innova-transparent.png',
-    hero_image_url: '/images/cars/innova-transparent.png',
+    category: 'MPV',
+    seating_capacity: '7 Seats',
+    image_url: VEHICLE_IMAGES['ertiga'].transparent,
+    hero_image_url: VEHICLE_IMAGES['ertiga'].transparent,
+    gallery_images: VEHICLE_IMAGES['ertiga'].gallery,
+    badge: 'FAMILY FAVORITE',
+    rating: 4.8,
+    review_count: '1,120+',
+    completed_tours: '1,120+ Completed Tours',
+    tagline: 'MARUTI SUZUKI • SMART HYBRID EDITION',
+    short_description: 'Smart, versatile 7-seater MPV engineered for economical family getaways.',
+    description: 'Maruti Suzuki Ertiga provides flexible 7-passenger seating, whisper-quiet cabin ride, and incredible fuel efficiency for city and intercity travel.',
+    outstation_price_per_km: 14,
+    daily_package_price: 3500,
+    min_km_per_day: 'Min. 250-300 kms/day',
+    package_hours: '8 Hours',
+    package_included_km: '80 km Included',
+    driver_allowance: 300,
+    extra_km_charge: 14,
+    extra_hour_charge: 150,
+    fuel_type: 'Petrol / CNG',
+    transmission: 'Manual',
+    engine: '1.5L K15C Smart Hybrid',
+    horsepower: '102 HP',
+    max_speed: '160 km/h',
+    driver_option: 'Chauffeur / Self-Drive',
+    luggage_capacity: '2-3 Trolley Bags',
+    highlights: [
+      'Economical long distance touring',
+      'Flexible 3-row seating configuration',
+      'Cooled cupholders & roof AC vents',
+    ],
+    key_features: [
+      'Uniformed, commercial license verified highway chauffeur',
+      'Automated Expressway Fastag pass - Zero roadside stops',
+      '100% Sanitized cabin - Chilled mineral water included',
+    ],
+    amenities: [
+      'Air Conditioning with Rear Blower',
+      'Reclining 2nd Row Seats',
+      'USB Fast Charging',
+      'Clean Fresh Cabin',
+      'Professional Highway Chauffeur',
+    ],
     is_active: true,
     is_hero_featured: true,
     display_order: 2,
   },
   {
     id: 'c3333333-3333-3333-3333-333333333333',
-    name: 'Swift Dzire',
+    name: 'Maruti Suzuki Swift Dzire',
+    slug: 'swift-dzire',
+    manufacturer: 'Maruti Suzuki',
+    model: 'Swift Dzire',
     car_type: 'Sedan',
-    seating_capacity: '4+1 Seating',
-    image_url: '/images/cars/swift-dzire-transparent.png',
-    hero_image_url: '/images/cars/swift-dzire-transparent.png',
+    category: 'Sedan',
+    seating_capacity: '4 Seats',
+    image_url: VEHICLE_IMAGES['swift-dzire'].transparent,
+    hero_image_url: VEHICLE_IMAGES['swift-dzire'].transparent,
+    gallery_images: VEHICLE_IMAGES['swift-dzire'].gallery,
+    badge: 'MOST ECONOMICAL',
+    rating: 4.9,
+    review_count: '2,350+',
+    completed_tours: '2,350+ Completed Tours',
+    tagline: 'MARUTI SUZUKI • COMPACT SEDAN EDITION',
+    short_description: 'Premium compact sedan ideal for airport drops, corporate transit, and couples.',
+    description: 'The Swift Dzire is India’s top choice for comfortable, pocket-friendly point-to-point transit with excellent legroom and dedicated trunk luggage space.',
+    outstation_price_per_km: 11,
+    daily_package_price: 2400,
+    min_km_per_day: 'Min. 250-300 kms/day',
+    package_hours: '8 Hours',
+    package_included_km: '80 km Included',
+    driver_allowance: 300,
+    extra_km_charge: 11,
+    extra_hour_charge: 120,
+    fuel_type: 'Petrol / CNG',
+    transmission: 'Manual',
+    engine: '1.2L DualJet Dual VVT',
+    horsepower: '89 HP',
+    max_speed: '170 km/h',
+    driver_option: 'Chauffeur / Self-Drive',
+    luggage_capacity: '2 Large Suitcases',
+    highlights: [
+      'Pocket-friendly outstation rates',
+      'Smooth city maneuverability',
+      '378L dedicated boot space',
+    ],
+    key_features: [
+      'Uniformed, commercial license verified highway chauffeur',
+      'Automated Expressway Fastag pass - Zero roadside stops',
+      '100% Sanitized cabin - Chilled mineral water included',
+    ],
+    amenities: [
+      'Automatic Climate Control',
+      'Rear Seat Armrest',
+      'Mobile Fast Charging',
+      'Punctual Chauffeur',
+      'Bluetooth Audio',
+    ],
     is_active: true,
     is_hero_featured: true,
     display_order: 3,
@@ -46,10 +194,55 @@ const INITIAL_CARS: Car[] = [
   {
     id: 'c4444444-4444-4444-4444-444444444444',
     name: 'Urbania Traveller',
+    slug: 'urbania',
+    manufacturer: 'Force',
+    model: 'Urbania',
     car_type: 'Luxury Van',
-    seating_capacity: '12+1 Seating',
-    image_url: '/images/cars/urbania-transparent.png',
-    hero_image_url: '/images/cars/urbania-transparent.png',
+    category: 'Tempo Traveller',
+    seating_capacity: '12+1 Seats',
+    image_url: VEHICLE_IMAGES['urbania'].transparent,
+    hero_image_url: VEHICLE_IMAGES['urbania'].transparent,
+    gallery_images: VEHICLE_IMAGES['urbania'].gallery,
+    badge: 'PREMIUM VAN',
+    rating: 5.0,
+    review_count: '400+',
+    completed_tours: '400+ Completed Tours',
+    tagline: 'FORCE • TEMPO TRAVELLER EDITION',
+    short_description: 'World-class luxury multi-seater for VIP delegations, weddings, and group expeditions.',
+    description: 'Engineered with aerodynamic monocoque chassis, ultra-luxurious captain reclining seats, individual AC vents, and massive panoramic touring windows.',
+    outstation_price_per_km: 60,
+    daily_package_price: 25000,
+    min_km_per_day: 'Min. 250-300 kms/day',
+    package_hours: '8 Hours',
+    package_included_km: '80 km Included',
+    driver_allowance: 500,
+    extra_km_charge: 60,
+    extra_hour_charge: 500,
+    fuel_type: 'Diesel',
+    transmission: 'Automatic',
+    engine: 'High Output',
+    horsepower: 'High Output',
+    max_speed: '240 km/h',
+    driver_option: 'Chauffeur / Self-Drive',
+    luggage_capacity: '3-5 Large Trolleys',
+    highlights: [
+      'Ideal for Surat - Mumbai & Udaipur road trips',
+      'Monocoque body with German engineering',
+      'Independent front suspension for airplane-like ride',
+    ],
+    key_features: [
+      'Uniformed, commercial license verified highway chauffeur',
+      'Automated Expressway Fastag pass - Zero roadside stops',
+      '100% Sanitized cabin - Chilled mineral water included',
+    ],
+    amenities: [
+      'Captain Reclining Seats',
+      'Dual Air Conditioning',
+      'Fast USB Chargers',
+      'Spacious Luggage Boot',
+      'Professional Highway Chauffeur',
+      'Air Suspension',
+    ],
     is_active: true,
     is_hero_featured: true,
     display_order: 4,
@@ -61,7 +254,7 @@ const INITIAL_ROUTES: Route[] = [
     id: 'r1111111-1111-1111-1111-111111111111',
     origin: 'Surat',
     destination: 'Mumbai Airport',
-    image_url: '/images/airport-transfer.jpg',
+    image_url: DEFAULT_AIRPORT_TRANSFER,
     is_active: true,
     is_featured: true,
     display_order: 1,
@@ -123,7 +316,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd1111111-1111-1111-1111-111111111111',
     name: 'Mumbai',
     description: 'Financial capital, Marine Drive & Gateway of India.',
-    image_url: '/images/destinations/mumbai.jpg',
+    image_url: DESTINATION_IMAGES.mumbai,
     is_published: true,
     display_order: 1,
   },
@@ -131,7 +324,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd2222222-2222-2222-2222-222222222222',
     name: 'Lonavala',
     description: 'Scenic misty Western Ghats, valleys & waterfalls.',
-    image_url: '/images/destinations/lonavala.jpg',
+    image_url: DESTINATION_IMAGES.lonavala,
     is_published: true,
     display_order: 2,
   },
@@ -139,7 +332,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd3333333-3333-3333-3333-333333333333',
     name: 'Nashik',
     description: 'Wine capital and sacred pilgrimage temples along Godavari.',
-    image_url: '/images/destinations/nashik.jpg',
+    image_url: DESTINATION_IMAGES.nashik,
     is_published: true,
     display_order: 3,
   },
@@ -147,7 +340,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd4444444-4444-4444-4444-444444444444',
     name: 'Statue of Unity',
     description: 'World’s tallest statue overlooking the serene Narmada river.',
-    image_url: '/images/destinations/statue-of-unity.jpg',
+    image_url: DESTINATION_IMAGES['statue-of-unity'],
     is_published: true,
     display_order: 4,
   },
@@ -155,7 +348,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd5555555-5555-5555-5555-555555555555',
     name: 'Somnath',
     description: 'Magnificent oceanfront Jyotirlinga temple shrine.',
-    image_url: '/images/destinations/somnath.jpg',
+    image_url: DESTINATION_IMAGES.somnath,
     is_published: true,
     display_order: 5,
   },
@@ -163,7 +356,7 @@ const INITIAL_DESTINATIONS: Destination[] = [
     id: 'd6666666-6666-6666-6666-666666666666',
     name: 'Diu',
     description: 'Sun-kissed beaches, golden sand, and historic sea fort.',
-    image_url: '/images/destinations/diu.jpg',
+    image_url: DESTINATION_IMAGES.diu,
     is_published: true,
     display_order: 6,
   },
@@ -313,7 +506,7 @@ const INITIAL_CONTENT: Record<string, HomepageSection> = {
     subtitle: 'Airport Transfers • Outstation Trips • City Travel & More',
     badge: 'PREMIUM CHAUFFEUR-DRIVEN CAR RENTAL',
     body: 'Experience effortless, punctual, and safe road journeys with our professionally driven fleet of modern cars.',
-    image_url: '/images/hero-bg.jpg',
+    image_url: DEFAULT_HERO_BG,
   },
   features: {
     id: 'features',
@@ -328,6 +521,7 @@ const INITIAL_CONTENT: Record<string, HomepageSection> = {
     subtitle: 'Dedicated to Comfort, Safety, and Reliable Road Journeys',
     badge: 'ABOUT ROYALRIDES',
     body: 'RoyalRides Travels is a premium car rental and travel agency specializing in outstation travel, airport transfers, corporate transit, and family tours. Our fleet of meticulously maintained vehicles and seasoned, courteous chauffeurs ensure you travel in absolute comfort and peace of mind.',
+    image_url: DEFAULT_ABOUT_IMG,
   },
   contact: {
     id: 'contact',
@@ -364,6 +558,41 @@ function setStorage<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(key, JSON.stringify(data));
+  } catch (err: any) {
+    console.warn('Storage write error, attempting quota recovery:', err);
+    try {
+      // 1. Evict any oversized raw base64 data from other keys
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('rr_') && k !== key) {
+          const val = localStorage.getItem(k);
+          if (val && val.length > 100000) {
+            localStorage.removeItem(k);
+          }
+        }
+      }
+
+      // 2. Try writing again
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch {
+      try {
+        // 3. If still failing, sanitize `data` itself: replace any gigantic (>100KB) data URLs
+        const sanitized = JSON.parse(
+          JSON.stringify(data, (_k, v) => {
+            if (typeof v === 'string' && v.startsWith('data:') && v.length > 100000) {
+              return DEFAULT_ABOUT_IMG;
+            }
+            return v;
+          })
+        );
+        localStorage.setItem(key, JSON.stringify(sanitized));
+      } catch (finalErr) {
+        console.error('LocalStorage write failed after all quota recovery attempts:', finalErr);
+      }
+    }
+  }
+
+  try {
     // Broadcast event across browser tabs
     const bc = new BroadcastChannel('rr_sync_channel');
     bc.postMessage({ type: 'SYNC_UPDATE', key });
@@ -383,58 +612,179 @@ function setStorage<T>(key: string, data: T): void {
     } catch {
       // Ignore background fetch error
     }
-  } catch (err) {
-    console.error('Storage write error:', err);
+  } catch (syncErr) {
+    console.warn('Sync broadcast warning:', syncErr);
   }
 }
 
 export const DataStore = {
+  enrichCarWithDefaults(car: Car): Car {
+    const match = INITIAL_CARS.find(
+      (c) => c.id === car.id || c.name.toLowerCase() === car.name.toLowerCase() || (c.slug && c.slug === car.slug)
+    );
+
+    const slug = car.slug || (match?.slug) || slugify(car.name);
+    const category = car.category || (match?.category) || car.car_type || 'MPV';
+    const manufacturer = car.manufacturer || (match?.manufacturer) || (car.name.split(' ')[0] || 'RoyalRides');
+    const model = car.model || (match?.model) || car.name;
+    const badge = car.badge !== undefined ? car.badge : (match?.badge || '');
+    const rating = car.rating !== undefined ? car.rating : (match?.rating || 4.9);
+    const review_count = car.review_count !== undefined ? car.review_count : (match?.review_count || '1,000+');
+    const completed_tours = car.completed_tours !== undefined ? car.completed_tours : (match?.completed_tours || '500+ Completed Tours');
+    const tagline = car.tagline || (match?.tagline) || `${manufacturer.toUpperCase()} • ${category.toUpperCase()} EDITION`;
+    const short_description = car.short_description || (match?.short_description) || `Chauffeur-driven ${car.name} for outstation travel and city transfers.`;
+    const description = car.description || (match?.description) || `Experience superior travel comfort with the ${car.name}. Professionally maintained with seasoned highway chauffeur.`;
+    const outstation_price_per_km = car.outstation_price_per_km !== undefined ? car.outstation_price_per_km : (match?.outstation_price_per_km ?? 15);
+    const daily_package_price = car.daily_package_price !== undefined ? car.daily_package_price : (match?.daily_package_price ?? 3500);
+    const min_km_per_day = car.min_km_per_day || (match?.min_km_per_day) || 'Min. 250-300 kms/day';
+    const package_hours = car.package_hours || (match?.package_hours) || '8 Hours';
+    const package_included_km = car.package_included_km || (match?.package_included_km) || '80 km Included';
+    const driver_allowance = car.driver_allowance !== undefined ? car.driver_allowance : (match?.driver_allowance ?? 300);
+    const extra_km_charge = car.extra_km_charge !== undefined ? car.extra_km_charge : (match?.extra_km_charge ?? outstation_price_per_km);
+    const extra_hour_charge = car.extra_hour_charge !== undefined ? car.extra_hour_charge : (match?.extra_hour_charge ?? 150);
+    const fuel_type = car.fuel_type || (match?.fuel_type) || 'Diesel';
+    const transmission = car.transmission || (match?.transmission) || 'Manual';
+    const engine = car.engine || (match?.engine) || 'High Output';
+    const horsepower = car.horsepower || (match?.horsepower) || 'High Output';
+    const max_speed = car.max_speed || (match?.max_speed) || '180 km/h';
+    const driver_option = car.driver_option || (match?.driver_option) || 'Chauffeur / Self-Drive';
+    const luggage_capacity = car.luggage_capacity || (match?.luggage_capacity) || '3-4 Large Trolleys';
+    const highlights = car.highlights && car.highlights.length > 0 ? car.highlights : (match?.highlights || ['Ideal for Surat - Mumbai & Udaipur road trips', 'Comfortable highway suspension', 'Fully sanitized cabin']);
+    const key_features = car.key_features && car.key_features.length > 0 ? car.key_features : (match?.key_features || [
+      'Uniformed, commercial license verified highway chauffeur',
+      'Automated Expressway Fastag pass - Zero roadside stops',
+      '100% Sanitized cabin - Chilled mineral water included',
+    ]);
+    const amenities = car.amenities && car.amenities.length > 0 ? car.amenities : (match?.amenities || [
+      'Captain Reclining Seats',
+      'Dual Air Conditioning',
+      'Fast USB Chargers',
+      'Spacious Luggage Boot',
+      'Professional Highway Chauffeur',
+    ]);
+    const image_url = migrateLegacyImagePath(car.image_url, 'car');
+    const hero_image_url = migrateLegacyImagePath(car.hero_image_url || car.image_url, 'car');
+    const gallery_images = (car.gallery_images && car.gallery_images.length > 0 ? car.gallery_images : (match?.gallery_images || [image_url]))
+      .map((img) => migrateLegacyImagePath(img, 'car'));
+
+    return {
+      ...car,
+      image_url,
+      hero_image_url,
+      slug,
+      category,
+      manufacturer,
+      model,
+      badge,
+      rating,
+      review_count,
+      completed_tours,
+      tagline,
+      short_description,
+      description,
+      outstation_price_per_km,
+      daily_package_price,
+      min_km_per_day,
+      package_hours,
+      package_included_km,
+      driver_allowance,
+      extra_km_charge,
+      extra_hour_charge,
+      fuel_type,
+      transmission,
+      engine,
+      horsepower,
+      max_speed,
+      driver_option,
+      luggage_capacity,
+      highlights,
+      key_features,
+      amenities,
+      gallery_images,
+    };
+  },
+
   // CARS
   async getCars(): Promise<Car[]> {
+    let cars: Car[] = [];
     if (isSupabaseConfigured() && supabase) {
       const { data, error } = await supabase
         .from('cars')
         .select('*')
         .order('display_order', { ascending: true });
-      if (!error && data && data.length > 0) return data;
+      if (!error && data && data.length > 0) cars = data;
     }
-    return getStorage<Car[]>(STORAGE_KEYS.CARS, INITIAL_CARS);
+    if (cars.length === 0) {
+      cars = getStorage<Car[]>(STORAGE_KEYS.CARS, INITIAL_CARS);
+    }
+    return cars.map((c) => this.enrichCarWithDefaults(c));
+  },
+
+  async getCarBySlug(slug: string): Promise<Car | null> {
+    const cars = await this.getCars();
+    const cleanSlug = slug.toLowerCase().trim();
+    const found = cars.find(
+      (c) =>
+        (c.slug && c.slug.toLowerCase() === cleanSlug) ||
+        c.id === cleanSlug ||
+        slugify(c.name) === cleanSlug ||
+        c.name.toLowerCase() === cleanSlug
+    );
+    return found || null;
   },
 
   async saveCar(car: Partial<Car>): Promise<Car> {
     const cars = await this.getCars();
     let updatedCar: Car;
+    const computedSlug = car.slug || (car.name ? slugify(car.name) : undefined);
+
     if (car.id) {
       const index = cars.findIndex((c) => c.id === car.id);
       if (index !== -1) {
-        updatedCar = { ...cars[index], ...car } as Car;
+        const existing = cars[index];
+        const finalImg = car.image_url !== undefined && car.image_url !== '' ? car.image_url : existing.image_url;
+        const finalHeroImg = car.hero_image_url !== undefined && car.hero_image_url !== '' ? car.hero_image_url : existing.hero_image_url;
+        const finalGallery = car.gallery_images && car.gallery_images.length > 0 ? car.gallery_images : existing.gallery_images;
+        updatedCar = {
+          ...existing,
+          ...car,
+          image_url: finalImg,
+          hero_image_url: finalHeroImg,
+          gallery_images: finalGallery,
+          slug: computedSlug || existing.slug || slugify(existing.name),
+        } as Car;
         cars[index] = updatedCar;
       } else {
-        updatedCar = {
+        updatedCar = this.enrichCarWithDefaults({
           id: car.id,
           name: car.name || 'New Car',
+          slug: computedSlug || slugify(car.name || 'New Car'),
           car_type: car.car_type || 'MPV',
           seating_capacity: car.seating_capacity || '7+1 Seating',
-          image_url: car.image_url || '/images/cars/innova.jpg',
-          hero_image_url: car.hero_image_url || car.image_url || '/images/cars/innova-transparent.png',
+          image_url: car.image_url || VEHICLE_IMAGES['innova'].primary,
+          hero_image_url: car.hero_image_url || car.image_url || VEHICLE_IMAGES['innova'].transparent,
           is_active: car.is_active ?? true,
           is_hero_featured: car.is_hero_featured ?? true,
           display_order: car.display_order || cars.length + 1,
-        };
+          ...car,
+        } as Car);
         cars.push(updatedCar);
       }
     } else {
-      updatedCar = {
-        id: 'car_' + Date.now(),
+      const newId = 'car_' + Date.now();
+      updatedCar = this.enrichCarWithDefaults({
+        id: newId,
         name: car.name || 'New Car',
+        slug: computedSlug || slugify(car.name || 'New Car'),
         car_type: car.car_type || 'MPV',
         seating_capacity: car.seating_capacity || '7+1 Seating',
-        image_url: car.image_url || '/images/cars/innova.jpg',
-        hero_image_url: car.hero_image_url || car.image_url || '/images/cars/innova-transparent.png',
+        image_url: car.image_url || VEHICLE_IMAGES['innova'].primary,
+        hero_image_url: car.hero_image_url || car.image_url || VEHICLE_IMAGES['innova'].transparent,
         is_active: car.is_active ?? true,
         is_hero_featured: car.is_hero_featured ?? true,
         display_order: cars.length + 1,
-      };
+        ...car,
+      } as Car);
       cars.push(updatedCar);
     }
     setStorage(STORAGE_KEYS.CARS, cars);
@@ -493,14 +843,21 @@ export const DataStore = {
 
   // ROUTES
   async getRoutes(): Promise<Route[]> {
+    let routes: Route[] = [];
     if (isSupabaseConfigured() && supabase) {
       const { data, error } = await supabase
         .from('routes')
         .select('*, prices:route_prices(*)')
         .order('display_order', { ascending: true });
-      if (!error && data && data.length > 0) return data;
+      if (!error && data && data.length > 0) routes = data;
     }
-    return getStorage<Route[]>(STORAGE_KEYS.ROUTES, INITIAL_ROUTES);
+    if (routes.length === 0) {
+      routes = getStorage<Route[]>(STORAGE_KEYS.ROUTES, INITIAL_ROUTES);
+    }
+    return routes.map((r) => ({
+      ...r,
+      image_url: r.image_url ? migrateLegacyImagePath(r.image_url, 'route') : r.image_url,
+    }));
   },
 
   async saveRoute(route: Partial<Route>): Promise<Route> {
@@ -509,7 +866,13 @@ export const DataStore = {
     if (route.id) {
       const index = routes.findIndex((r) => r.id === route.id);
       if (index !== -1) {
-        updatedRoute = { ...routes[index], ...route } as Route;
+        const existing = routes[index];
+        const finalImg = route.image_url !== undefined && route.image_url !== '' ? route.image_url : existing.image_url;
+        updatedRoute = {
+          ...existing,
+          ...route,
+          image_url: finalImg,
+        } as Route;
         routes[index] = updatedRoute;
       } else {
         updatedRoute = {
@@ -582,14 +945,21 @@ export const DataStore = {
 
   // DESTINATIONS
   async getDestinations(): Promise<Destination[]> {
+    let destinations: Destination[] = [];
     if (isSupabaseConfigured() && supabase) {
       const { data, error } = await supabase
         .from('destinations')
         .select('*')
         .order('display_order', { ascending: true });
-      if (!error && data && data.length > 0) return data;
+      if (!error && data && data.length > 0) destinations = data;
     }
-    return getStorage<Destination[]>(STORAGE_KEYS.DESTINATIONS, INITIAL_DESTINATIONS);
+    if (destinations.length === 0) {
+      destinations = getStorage<Destination[]>(STORAGE_KEYS.DESTINATIONS, INITIAL_DESTINATIONS);
+    }
+    return destinations.map((d) => ({
+      ...d,
+      image_url: migrateLegacyImagePath(d.image_url, 'destination'),
+    }));
   },
 
   async saveDestination(dest: Partial<Destination>): Promise<Destination> {
@@ -598,14 +968,20 @@ export const DataStore = {
     if (dest.id) {
       const index = destinations.findIndex((d) => d.id === dest.id);
       if (index !== -1) {
-        updatedDest = { ...destinations[index], ...dest } as Destination;
+        const existing = destinations[index];
+        const finalImg = dest.image_url !== undefined && dest.image_url !== '' ? dest.image_url : existing.image_url;
+        updatedDest = {
+          ...existing,
+          ...dest,
+          image_url: finalImg,
+        } as Destination;
         destinations[index] = updatedDest;
       } else {
         updatedDest = {
           id: dest.id,
           name: dest.name || 'New Destination',
           description: dest.description || '',
-          image_url: dest.image_url || '/images/destinations/mumbai.jpg',
+          image_url: dest.image_url || DESTINATION_IMAGES.mumbai,
           is_published: dest.is_published ?? true,
           display_order: dest.display_order || destinations.length + 1,
         };
@@ -616,7 +992,7 @@ export const DataStore = {
         id: 'dest_' + Date.now(),
         name: dest.name || 'New Destination',
         description: dest.description || '',
-        image_url: dest.image_url || '/images/destinations/mumbai.jpg',
+        image_url: dest.image_url || DESTINATION_IMAGES.mumbai,
         is_published: dest.is_published ?? true,
         display_order: destinations.length + 1,
       };
@@ -672,7 +1048,13 @@ export const DataStore = {
     if (review.id) {
       const index = reviews.findIndex((r) => r.id === review.id);
       if (index !== -1) {
-        updatedReview = { ...reviews[index], ...review } as Review;
+        const existing = reviews[index];
+        const finalAvatar = review.avatar_url !== undefined ? review.avatar_url : existing.avatar_url;
+        updatedReview = {
+          ...existing,
+          ...review,
+          avatar_url: finalAvatar,
+        } as Review;
         reviews[index] = updatedReview;
       } else {
         updatedReview = {
@@ -680,6 +1062,7 @@ export const DataStore = {
           customer_name: review.customer_name || 'Guest',
           rating: review.rating || 5,
           review_text: review.review_text || '',
+          avatar_url: review.avatar_url || null,
           is_published: review.is_published ?? true,
           is_demo: review.is_demo ?? false,
           display_order: review.display_order || reviews.length + 1,
@@ -692,6 +1075,7 @@ export const DataStore = {
         customer_name: review.customer_name || 'Guest',
         rating: review.rating || 5,
         review_text: review.review_text || '',
+        avatar_url: review.avatar_url || null,
         is_published: review.is_published ?? true,
         is_demo: false,
         display_order: reviews.length + 1,
@@ -708,6 +1092,7 @@ export const DataStore = {
           customer_name: updatedReview.customer_name,
           rating: updatedReview.rating,
           review_text: updatedReview.review_text,
+          avatar_url: updatedReview.avatar_url,
           is_published: updatedReview.is_published,
           is_demo: updatedReview.is_demo,
           display_order: updatedReview.display_order,
@@ -836,11 +1221,20 @@ export const DataStore = {
 
   // SETTINGS
   async getSettings(): Promise<SiteSettings> {
+    let settings: SiteSettings = INITIAL_SETTINGS;
     if (isSupabaseConfigured() && supabase) {
       const { data, error } = await supabase.from('site_settings').select('*').eq('id', 'default').single();
-      if (!error && data) return data;
+      if (!error && data) settings = data;
+    } else {
+      settings = getStorage<SiteSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS);
     }
-    return getStorage<SiteSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS);
+    if (settings.logo_url) {
+      settings = {
+        ...settings,
+        logo_url: migrateLegacyImagePath(settings.logo_url),
+      };
+    }
+    return settings;
   },
 
   async saveSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
@@ -856,27 +1250,38 @@ export const DataStore = {
 
   // HOMEPAGE SECTIONS
   async getHomepageContent(): Promise<Record<string, HomepageSection>> {
+    let map: Record<string, HomepageSection> = { ...INITIAL_CONTENT };
     if (isSupabaseConfigured() && supabase) {
       try {
         const { data, error } = await supabase.from('homepage_sections').select('*');
         if (!error && data && data.length > 0) {
-          const map: Record<string, HomepageSection> = { ...INITIAL_CONTENT };
           for (const s of data) {
             map[s.id] = s;
           }
-          return map;
         }
       } catch (err) {
         console.warn('Supabase homepage sections fetch fallback:', err);
       }
+    } else {
+      map = getStorage<Record<string, HomepageSection>>(STORAGE_KEYS.CONTENT, INITIAL_CONTENT);
     }
-    return getStorage<Record<string, HomepageSection>>(STORAGE_KEYS.CONTENT, INITIAL_CONTENT);
+
+    for (const key of Object.keys(map)) {
+      if (map[key].image_url) {
+        map[key] = {
+          ...map[key],
+          image_url: migrateLegacyImagePath(map[key].image_url, key === 'hero' ? 'hero' : 'about'),
+        };
+      }
+    }
+    return map;
   },
 
   async saveHomepageContent(key: string, content: Partial<HomepageSection>): Promise<HomepageSection> {
     const all = await this.getHomepageContent();
     const current = all[key] || { id: key, title: '', subtitle: '' };
-    const updated = { ...current, ...content };
+    const finalImg = content.image_url !== undefined && content.image_url !== '' ? content.image_url : current.image_url;
+    const updated = { ...current, ...content, image_url: finalImg };
     all[key] = updated;
     setStorage(STORAGE_KEYS.CONTENT, all);
 
@@ -916,15 +1321,123 @@ export const DataStore = {
       }
     }
 
-    // Local / Offline fallback to persistent data URL
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        resolve((e.target?.result as string) || null);
+    // Local / Offline fallback to compressed persistent data URL (prevents LocalStorage QuotaExceededError)
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve(null);
+        return;
+      }
+      if (file.type === 'image/svg+xml') {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) || null);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+        return;
+      }
+      const img = new window.Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const maxDim = 800;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve((e.target?.result as string) || null);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(file);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        let dataUrl = canvas.toDataURL('image/webp', 0.8);
+        if (!dataUrl.startsWith('data:image/webp')) {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        }
+        resolve(dataUrl);
       };
-      reader.onerror = () => reject(new Error('Failed to read image file'));
-      reader.readAsDataURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) || null);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      };
+      img.src = objectUrl;
     });
+  },
+
+  // SAFE STORAGE CLEANUP
+  async safeDeleteUnusedStorageAsset(imageUrl?: string | null): Promise<boolean> {
+    if (!imageUrl || typeof imageUrl !== 'string') return false;
+    // Only attempt delete if it is hosted in the managed Supabase 'travel-assets' bucket
+    const isManagedStorage =
+      imageUrl.includes('/travel-assets/') ||
+      imageUrl.includes('travel-assets/');
+    if (!isManagedStorage) return false;
+
+    // Extract path/filename inside the travel-assets bucket
+    let filename = '';
+    const match = imageUrl.match(/travel-assets\/([^?#]+)/);
+    if (match && match[1]) {
+      filename = decodeURIComponent(match[1]);
+    }
+    if (!filename) return false;
+
+    try {
+      // Check if any active entity still references this image
+      const [cars, destinations, routes, settings, sections] = await Promise.all([
+        this.getCars(),
+        this.getDestinations(),
+        this.getRoutes(),
+        this.getSettings(),
+        this.getHomepageContent(),
+      ]);
+
+      const isInCars = cars.some(
+        (c: Car) =>
+          c.image_url === imageUrl ||
+          c.hero_image_url === imageUrl ||
+          (c.gallery_images && c.gallery_images.includes(imageUrl))
+      );
+      if (isInCars) return false;
+
+      const isInDestinations = destinations.some((d: Destination) => d.image_url === imageUrl);
+      if (isInDestinations) return false;
+
+      const isInRoutes = routes.some((r: Route) => r.image_url === imageUrl);
+      if (isInRoutes) return false;
+
+      if (settings?.logo_url === imageUrl) return false;
+
+      const isInSections = Object.values(sections).some((s: HomepageSection) => s.image_url === imageUrl);
+      if (isInSections) return false;
+
+      // Confirmed unused: delete from Supabase storage bucket
+      if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.storage.from('travel-assets').remove([filename]);
+        if (error) {
+          console.warn('Storage object cleanup warning:', error);
+          return false;
+        }
+        return true;
+      }
+      return false;
+    } catch (cleanupErr) {
+      console.warn('Failed to verify or delete unused storage object:', cleanupErr);
+      return false;
+    }
   },
 
   // REALTIME SYNCHRONIZATION

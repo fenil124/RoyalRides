@@ -4,6 +4,7 @@ import Image from '@/components/common/Image';
 import { motion } from 'framer-motion';
 import { ShieldCheck, UserCheck, CalendarCheck, ArrowRight } from 'lucide-react';
 import { HomepageSection, SiteSettings } from '@/types';
+import { DEFAULT_ABOUT_IMG } from '@/lib/constants/default-images';
 
 interface AboutSectionProps {
   content?: HomepageSection;
@@ -11,6 +12,7 @@ interface AboutSectionProps {
 }
 
 export function AboutSection({ content }: AboutSectionProps) {
+  const aboutImgSrc = content?.image_url || DEFAULT_ABOUT_IMG;
   const benefitHighlights = [
     {
       title: 'Comfortable Vehicles',
@@ -46,9 +48,10 @@ export function AboutSection({ content }: AboutSectionProps) {
           >
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/60 bg-white aspect-[4/3] sm:aspect-[16/11]">
               <Image
-                src="/images/airport-transfer.jpg"
+                src={aboutImgSrc}
                 alt="RoyalRides Chauffeur-Driven Travel Comfort"
                 fill
+                unoptimized={Boolean(aboutImgSrc?.startsWith('http') || aboutImgSrc?.startsWith('data:'))}
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 42vw"
               />

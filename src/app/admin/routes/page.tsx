@@ -7,6 +7,7 @@ import { DataStore } from '@/lib/data-store';
 import { Route, Car } from '@/types';
 import { formatINR } from '@/lib/utils';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
+import { ImageFieldManager } from '@/components/admin/ImageFieldManager';
 
 export default function AdminRoutesPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -27,6 +28,7 @@ export default function AdminRoutesPage() {
   const [formOrigin, setFormOrigin] = useState('Surat');
   const [formDestination, setFormDestination] = useState('');
   const [formPrice, setFormPrice] = useState('8000');
+  const [formImageUrl, setFormImageUrl] = useState('');
   const [formActive, setFormActive] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -55,6 +57,7 @@ export default function AdminRoutesPage() {
     setFormOrigin('Surat');
     setFormDestination('');
     setFormPrice('8000');
+    setFormImageUrl('');
     setFormActive(true);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -66,6 +69,7 @@ export default function AdminRoutesPage() {
     setFormDestination(route.destination);
     const p = route.prices && route.prices.length > 0 ? route.prices[0].price : null;
     setFormPrice(p !== null && p !== undefined ? String(p) : '');
+    setFormImageUrl(route.image_url || '');
     setFormActive(route.is_active);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -118,6 +122,7 @@ export default function AdminRoutesPage() {
         id: editingRoute ? editingRoute.id : undefined,
         origin: formOrigin.trim(),
         destination: formDestination.trim(),
+        image_url: formImageUrl.trim() ? formImageUrl.trim() : null,
         is_active: formActive,
         is_featured: true,
         prices: [
@@ -283,7 +288,20 @@ export default function AdminRoutesPage() {
                         {route.origin}
                       </td>
                       <td className="py-3.5 px-4 font-bold text-[#14243A]">
-                        {route.destination}
+                        <div className="flex items-center gap-2.5">
+                          {route.image_url ? (
+                            <img
+                              src={route.image_url}
+                              alt={route.destination}
+                              className="w-9 h-7 rounded-md object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-9 h-7 rounded-md bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 font-bold shrink-0">
+                              RT
+                            </div>
+                          )}
+                          <span>{route.destination}</span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-[#0B2C50]">
                         {displayPrice !== null && displayPrice !== undefined && displayPrice > 0
@@ -408,6 +426,15 @@ export default function AdminRoutesPage() {
                   onChange={(e) => setFormPrice(e.target.value)}
                   placeholder="e.g. 8000"
                   className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs text-[#14243A] focus:outline-hidden focus:border-[#0B2C50]"
+                />
+              </div>
+
+              <div className="pt-2">
+                <ImageFieldManager
+                  label="Route Card Image (Optional)"
+                  value={formImageUrl}
+                  onChange={setFormImageUrl}
+                  helpText="Upload an image or paste a URL for this route's highlight card (e.g., Airport Transfers)."
                 />
               </div>
 

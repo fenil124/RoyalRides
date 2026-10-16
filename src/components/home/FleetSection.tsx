@@ -1,194 +1,386 @@
 'use client';
 
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Image from '@/components/common/Image';
-import { motion, type Variants } from 'framer-motion';
-import { Users, Shield, Sparkles, ArrowRight } from 'lucide-react';
-import { Car } from '@/types';
+import {
+  Users,
+  Fuel,
+  Settings as TransmissionIcon,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpRight,
+  MessageCircle,
+  Star,
+} from 'lucide-react';
+import { Car, SiteSettings } from '@/types';
 
 interface FleetSectionProps {
   cars: Car[];
-  onSelectCar: (car: Car) => void;
+  onSelectCar?: (car: Car) => void;
+  settings?: SiteSettings;
 }
 
-export function FleetSection({ cars, onSelectCar }: FleetSectionProps) {
-  // Load ALL active vehicles from the existing database/store
+const CATEGORY_TABS = [
+  'All Vehicles',
+  'MPV',
+  'Sedan',
+  'Luxury',
+  'SUV',
+  'Tempo Traveller',
+];
+
+export function FleetSection({ cars, onSelectCar, settings }: FleetSectionProps) {
+  const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState('All Vehicles');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Active published vehicles only
   const activeCars = cars.filter((c) => c.is_active);
 
-  // Canonical fallback if no cars are active in database
-  const canonicalFallback: Car[] = [
-    {
-      id: 'c2222222-2222-2222-2222-222222222222',
-      name: 'Ertiga',
-      image_url: '/images/cars/ertiga-transparent.png',
-      car_type: 'MPV',
-      seating_capacity: '6+1 Seating',
-      is_active: true,
-      is_hero_featured: true,
-      display_order: 1,
-    },
-    {
-      id: 'c1111111-1111-1111-1111-111111111111',
-      name: 'Innova',
-      image_url: '/images/cars/innova-transparent.png',
-      car_type: 'MPV',
-      seating_capacity: '7+1 Seating',
-      is_active: true,
-      is_hero_featured: true,
-      display_order: 2,
-    },
-    {
-      id: 'c3333333-3333-3333-3333-333333333333',
-      name: 'Swift Dzire',
-      image_url: '/images/cars/swift-dzire-transparent.png',
-      car_type: 'Sedan',
-      seating_capacity: '4+1 Seating',
-      is_active: true,
-      is_hero_featured: true,
-      display_order: 3,
-    },
-    {
-      id: 'c4444444-4444-4444-4444-444444444444',
-      name: 'Urbania Traveller',
-      image_url: '/images/cars/urbania-transparent.png',
-      car_type: 'Luxury Van',
-      seating_capacity: '12+1 Seating',
-      is_active: true,
-      is_hero_featured: true,
-      display_order: 4,
-    },
-  ];
+  // Filter cars based on selected category tab
+  const filteredCars = activeCars.filter((car) => {
+    if (selectedCategory === 'All Vehicles') return true;
+    const cat = (car.category || car.car_type || '').toLowerCase();
+    const target = selectedCategory.toLowerCase();
 
-  // Helper to ensure transparent cutout is prioritized over legacy jpeg
-  const getCarImageUrl = (car: { name: string; image_url: string }) => {
-    if (car.image_url?.includes('.jpg')) {
-      const lower = car.name.toLowerCase();
-      if (lower.includes('ertiga')) return '/images/cars/ertiga-transparent.png';
-      if (lower.includes('innova')) return '/images/cars/innova-transparent.png';
-      if (lower.includes('dzire') || lower.includes('swift')) return '/images/cars/swift-dzire-transparent.png';
-      if (lower.includes('urbania')) return '/images/cars/urbania-transparent.png';
+    if (target === 'tempo traveller') {
+      return cat.includes('tempo') || cat.includes('traveller') || cat.includes('van');
     }
-    return car.image_url || '/images/cars/innova-transparent.png';
+    if (target === 'luxury') {
+      return cat.includes('luxury') || (car.badge && car.badge.toLowerCase().includes('luxury'));
+    }
+    return cat.includes(target);
+  });
+
+  // Calculate scroll button states & active dot index
+  const updateScrollState = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
+    // Calculate approximate index based on card width + gap
+    const cardWidth = el.firstElementChild
+      ? (el.firstElementChild as HTMLElement).offsetWidth + 24
+      : 360;
+    const index = Math.round(scrollLeft / cardWidth);
+    setActiveIndex(Math.min(Math.max(0, index), Math.max(0, filteredCars.length - 1)));
+  }, [filteredCars.length]);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    window.addEventListener('resize', updateScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [updateScrollState]);
+
+  // When changing category, reset scroll to start
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+    setActiveIndex(0);
+  }, [selectedCategory]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardWidth = el.firstElementChild
+      ? (el.firstElementChild as HTMLElement).offsetWidth + 24
+      : 360;
+    const scrollAmount = direction === 'left' ? -cardWidth : cardWidth;
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
-  const displayCars = (activeCars.length > 0 ? activeCars : canonicalFallback).map((c) => ({
-    ...c,
-    image_url: getCarImageUrl(c),
-  }));
-
-  // Dynamic grid column balancing
-  const getGridCols = (count: number) => {
-    if (count === 1) return 'grid-cols-1 max-w-md mx-auto';
-    if (count === 2) return 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto';
-    if (count === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-    if (count === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
-    if (count === 5) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5';
-    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+  const handleScrollToCard = (index: number) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardWidth = el.firstElementChild
+      ? (el.firstElementChild as HTMLElement).offsetWidth + 24
+      : 360;
+    el.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+    setActiveIndex(index);
   };
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+  const handleOpenDetails = (car: Car) => {
+    const targetSlug = car.slug || car.id;
+    navigate(`/fleet/${targetSlug}`);
   };
 
-  const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.45,
-        ease: 'easeOut',
-      },
-    },
+  const handleOpenWhatsApp = (e: React.MouseEvent, car: Car) => {
+    e.stopPropagation();
+    const rawPhone = settings?.whatsapp || '+91 98765 43210';
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '') || '919876543210';
+    const message = encodeURIComponent(
+      `Hello RoyalRides Travels, I am inquiring about the ${car.name}. Please share booking and tariff details.`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <section
       id="fleet"
-      className="py-14 sm:py-20 bg-white border-b border-[#E2E8F0] scroll-mt-20 sm:scroll-mt-24"
+      className="py-16 sm:py-24 bg-white border-b border-[#E2E8F0] scroll-mt-20 sm:scroll-mt-24 select-none"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="max-w-3xl mb-10 sm:mb-12"
-        >
-          <div className="flex items-center gap-2 text-xs font-bold text-[#F5B936] uppercase tracking-[0.2em] mb-2">
+        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
+          <div className="inline-flex items-center justify-center gap-2 text-xs font-bold text-[#F5B936] uppercase tracking-[0.2em] mb-2.5">
             <span className="w-5 h-[1.5px] bg-[#F5B936]" />
             <span>OUR FLEET</span>
+            <span className="w-5 h-[1.5px] bg-[#F5B936]" />
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#081A33] tracking-tight">
-            Choose Your Perfect Ride
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#081A33] tracking-tight">
+            Choose Your <span className="text-[#F5B936]">Perfect Ride</span>
           </h2>
-          <p className="mt-2 text-sm sm:text-base text-[#64748B] leading-relaxed">
+          <p className="mt-3 text-sm sm:text-base text-[#64748B] leading-relaxed">
             Explore our chauffeur-driven vehicles for comfortable city journeys, airport transfers, and outstation travel.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Responsive Grid with Staggered Entrance Animation */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className={`grid gap-6 ${getGridCols(displayCars.length)}`}
-        >
-          {displayCars.map((car) => (
-            <motion.div
-              key={car.id || car.name}
-              variants={cardVariants}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              onClick={() => onSelectCar(car as Car)}
-              className="group bg-[#F5F8FC] rounded-2xl p-5 border border-[#E2E8F0] hover:border-[#F5B936]/60 hover:shadow-xl hover:shadow-[#081A33]/5 transition-all duration-300 cursor-pointer flex flex-col justify-between"
-            >
-              {/* Image Container with Consistent Ratio & No Stretched Vehicles */}
-              <div className="relative w-full h-40 sm:h-44 mb-4 rounded-xl flex items-center justify-center overflow-hidden">
-                <Image
-                  src={car.image_url}
-                  alt={car.name}
-                  fill
-                  className="object-contain p-2"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                />
-              </div>
+        {/* Category Filter Pills */}
+        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-4 mb-8 sm:mb-12 no-scrollbar px-1">
+          {CATEGORY_TABS.map((tab) => {
+            const isActive = selectedCategory === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setSelectedCategory(tab)}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#081A33] text-white shadow-md shadow-[#081A33]/20 scale-102'
+                    : 'bg-white text-slate-700 hover:text-[#081A33] hover:bg-slate-50 border border-slate-200/80 shadow-2xs'
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
 
-              {/* Vehicle Information */}
-              <div className="text-center pt-1 w-full flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-[#081A33] group-hover:text-[#F5B936] transition-colors">
-                    {car.name}
-                  </h3>
-                  <div className="flex items-center justify-center gap-2 mt-1 text-xs text-[#64748B] font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-[#081A33]" />
-                      <span>{car.seating_capacity}</span>
-                    </span>
-                    <span>&bull;</span>
-                    <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[#081A33] text-[10px] font-bold">
-                      {car.car_type}
-                    </span>
+        {/* Carousel Container with Floating Left / Right Buttons */}
+        <div className="relative group">
+          {/* Left Arrow Button */}
+          <button
+            type="button"
+            onClick={() => handleScroll('left')}
+            disabled={!canScrollLeft}
+            aria-label="Scroll fleet carousel left"
+            className={`hidden md:flex absolute -left-5 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white border border-slate-200/90 shadow-xl items-center justify-center transition-all duration-200 cursor-pointer ${
+              canScrollLeft
+                ? 'text-[#081A33] hover:bg-slate-50 hover:scale-110 active:scale-95'
+                : 'opacity-30 cursor-not-allowed text-slate-300'
+            }`}
+          >
+            <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            type="button"
+            onClick={() => handleScroll('right')}
+            disabled={!canScrollRight}
+            aria-label="Scroll fleet carousel right"
+            className={`hidden md:flex absolute -right-5 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white border border-slate-200/90 shadow-xl items-center justify-center transition-all duration-200 cursor-pointer ${
+              canScrollRight
+                ? 'text-[#081A33] hover:bg-slate-50 hover:scale-110 active:scale-95'
+                : 'opacity-30 cursor-not-allowed text-slate-300'
+            }`}
+          >
+            <ChevronRight className="w-6 h-6 stroke-[2.5]" />
+          </button>
+
+          {/* Horizontal Sliding Carousel Track */}
+          <div
+            ref={scrollContainerRef}
+            tabIndex={0}
+            aria-label="RoyalRides Fleet Carousel"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') handleScroll('left');
+              if (e.key === 'ArrowRight') handleScroll('right');
+            }}
+            className="flex items-stretch gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 px-2 no-scrollbar outline-none focus:ring-1 focus:ring-[#F5B936]/40 rounded-3xl"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {filteredCars.map((car) => {
+              const outstationPrice = car.outstation_price_per_km ?? 15;
+              const dailyPrice = car.daily_package_price ?? 3500;
+              const manufacturer = car.manufacturer || (car.name.split(' ')[0] || 'ROYALRIDES');
+              const displayBadge = car.badge || 'VERIFIED FLEET';
+
+              return (
+                <div
+                  key={car.id || car.slug}
+                  onClick={() => handleOpenDetails(car)}
+                  className="snap-start shrink-0 w-[84vw] sm:w-[350px] md:w-[370px] lg:w-[375px] bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-sm hover:shadow-xl hover:border-[#F5B936]/60 transition-all duration-300 flex flex-col justify-between cursor-pointer group/card relative"
+                >
+                  <div>
+                    {/* Top Row: Badge & Rating */}
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      {displayBadge ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase bg-[#F5B936]/15 text-[#B87A04] border border-[#F5B936]/30">
+                          {displayBadge}
+                        </span>
+                      ) : (
+                        <div />
+                      )}
+
+                      {car.rating ? (
+                        <div className="flex items-center gap-1 text-xs font-bold text-[#081A33]">
+                          <Star className="w-3.5 h-3.5 fill-[#F5B936] text-[#F5B936]" />
+                          <span>{car.rating}</span>
+                          {car.review_count && (
+                            <span className="text-[11px] font-normal text-slate-400">
+                              ({car.review_count})
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Primary Vehicle Image */}
+                    <div className="relative w-full h-44 sm:h-48 mb-4 flex items-center justify-center overflow-hidden">
+                      <Image
+                        src={car.image_url}
+                        alt={car.name}
+                        fill
+                        className="object-contain p-2 group-hover/card:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 380px"
+                      />
+                    </div>
+
+                    {/* Vehicle Identity */}
+                    <div className="mb-4">
+                      <span className="block text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">
+                        {manufacturer}
+                      </span>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-[#081A33] group-hover/card:text-[#F5B936] transition-colors leading-snug">
+                        {car.name}
+                      </h3>
+                    </div>
+
+                    {/* Key Technical Specs Row */}
+                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-slate-600 mb-5">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                        <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{car.seating_capacity || '7 Seats'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold justify-center">
+                        <Fuel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{car.fuel_type || 'Diesel'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold justify-end">
+                        <TransmissionIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{car.transmission || 'Automatic'}</span>
+                      </div>
+                    </div>
+
+                    {/* Pricing Cards Row */}
+                    <div className="grid grid-cols-2 gap-3 mb-5">
+                      {/* Outstation Tariff */}
+                      <div className="p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg sm:text-xl font-extrabold text-[#081A33]">
+                            ₹{outstationPrice}
+                          </span>
+                          <span className="text-[11px] font-medium text-slate-500">/km</span>
+                        </div>
+                        <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
+                          Outstation Tariff
+                        </span>
+                      </div>
+
+                      {/* City Daily Package */}
+                      <div className="p-3 rounded-2xl bg-[#FFF9EE] border border-[#F5B936]/25">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg sm:text-xl font-extrabold text-[#081A33]">
+                            ₹{dailyPrice.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[11px] font-medium text-slate-500">/day</span>
+                        </div>
+                        <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
+                          Daily Package
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Action Buttons Row */}
+                  <div className="pt-2 flex items-center gap-2">
+                    {/* Quick view button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDetails(car);
+                      }}
+                      title="Quick View Vehicle Details"
+                      aria-label={`View details for ${car.name}`}
+                      className="w-11 h-11 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-[#081A33] flex items-center justify-center shrink-0 transition-colors shadow-2xs hover:border-slate-300 cursor-pointer"
+                    >
+                      <ArrowUpRight className="w-4 h-4 stroke-[2.2]" />
+                    </button>
+
+                    {/* WhatsApp Chat Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenWhatsApp(e, car)}
+                      title="Chat on WhatsApp"
+                      aria-label={`Inquire about ${car.name} on WhatsApp`}
+                      className="px-3.5 h-11 rounded-2xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 border border-[#25D366]/30 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <MessageCircle className="w-4 h-4 fill-[#25D366] text-[#25D366]" />
+                      <span>Chat</span>
+                    </button>
+
+                    {/* Primary View Details Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDetails(car);
+                      }}
+                      className="flex-1 h-11 rounded-2xl bg-[#081A33] hover:bg-[#122D52] text-white font-extrabold text-xs flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
+                    >
+                      <span>View Details</span>
+                    </button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                {/* Enquire Now Action */}
-                <div className="mt-5 pt-3 border-t border-slate-200/60">
-                  <span className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-white group-hover:bg-[#F5B936] text-[#081A33] text-xs font-extrabold border border-slate-200 group-hover:border-[#F5B936] shadow-2xs group-hover:shadow-md transition-all duration-200">
-                    <span>Enquire Now</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+        {/* Carousel Pagination Dots Indicator */}
+        {filteredCars.length > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {filteredCars.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleScrollToCard(i)}
+                aria-label={`Go to vehicle slide ${i + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  i === activeIndex
+                    ? 'w-8 h-2 bg-[#F5B936]'
+                    : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

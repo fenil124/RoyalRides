@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { DataStore } from '@/lib/data-store';
 import { Destination } from '@/types';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
+import { ImageFieldManager } from '@/components/admin/ImageFieldManager';
+import { DESTINATION_IMAGES } from '@/lib/constants/default-images';
 
 export default function AdminDestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -23,13 +25,21 @@ export default function AdminDestinationsPage() {
   // Form state
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState('/images/destinations/mumbai.jpg');
+  const [formImageUrl, setFormImageUrl] = useState(DESTINATION_IMAGES.mumbai);
   const [formPublished, setFormPublished] = useState(true);
 
-  // File upload state
+  // File Upload State
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const cleanupPreview = useCallback(() => {
+    if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setUploadedFile(null);
+    setImagePreviewUrl(null);
+  }, [imagePreviewUrl]);
 
   const loadDestinations = useCallback(async () => {
     const data = await DataStore.getDestinations();
@@ -49,25 +59,23 @@ export default function AdminDestinationsPage() {
   }, [loadDestinations]);
 
   const handleOpenAdd = () => {
+    cleanupPreview();
     setEditingDest(null);
     setFormName('');
     setFormDescription('');
-    setFormImageUrl('/images/destinations/mumbai.jpg');
+    setFormImageUrl(DESTINATION_IMAGES.mumbai);
     setFormPublished(true);
-    setUploadedFile(null);
-    setImagePreviewUrl(null);
     setErrorMessage(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (dest: Destination) => {
+    cleanupPreview();
     setEditingDest(dest);
-    setFormName(dest.name);
+    setFormName(dest.name || '');
     setFormDescription(dest.description || '');
-    setFormImageUrl(dest.image_url);
-    setFormPublished(dest.is_published);
-    setUploadedFile(null);
-    setImagePreviewUrl(null);
+    setFormImageUrl(dest.image_url || DESTINATION_IMAGES.mumbai);
+    setFormPublished(dest.is_published ?? true);
     setErrorMessage(null);
     setIsModalOpen(true);
   };
@@ -105,17 +113,18 @@ export default function AdminDestinationsPage() {
       setErrorMessage('Please select a valid image file.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image size exceeds 5 MB limit.');
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('Image size exceeds 10 MB limit.');
       return;
     }
 
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImagePreviewUrl(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    if (imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    const preview = URL.createObjectURL(file);
+    setImagePreviewUrl(preview);
+    setFormImageUrl(preview);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -129,24 +138,34 @@ export default function AdminDestinationsPage() {
     setErrorMessage(null);
 
     try {
-      let finalImageUrl = formImageUrl;
+      let finalImageUrl = formImageUrl.trim();
+
+      // If user selected an uploaded file, persist it first
       if (uploadedFile) {
-        const remoteUrl = await DataStore.uploadImage(uploadedFile);
-        if (remoteUrl) {
-          finalImageUrl = remoteUrl;
-        } else if (imagePreviewUrl) {
-          finalImageUrl = imagePreviewUrl;
+        const uploadedUrl = await DataStore.uploadImage(uploadedFile);
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        } else {
+          throw new Error('Failed to upload destination image file');
         }
       }
 
-      await DataStore.saveDestination({
+      const prevImageUrl = editingDest?.image_url;
+
+      const saved = await DataStore.saveDestination({
         id: editingDest ? editingDest.id : undefined,
         name: formName.trim(),
         description: formDescription.trim(),
-        image_url: finalImageUrl,
+        image_url: finalImageUrl || DESTINATION_IMAGES.mumbai,
         is_published: formPublished,
       });
 
+      // Safely delete replaced storage asset if no longer referenced
+      if (prevImageUrl && prevImageUrl !== saved.image_url) {
+        await DataStore.safeDeleteUnusedStorageAsset(prevImageUrl).catch(() => {});
+      }
+
+      cleanupPreview();
       toast.success(editingDest ? 'Destination updated' : 'New destination added');
       setIsModalOpen(false);
       loadDestinations();
@@ -283,7 +302,12 @@ export default function AdminDestinationsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs"
-            onClick={() => !isSaving && setIsModalOpen(false)}
+            onClick={() => {
+              if (!isSaving) {
+                cleanupPreview();
+                setIsModalOpen(false);
+              }
+            }}
           />
           <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-[#E2E8F0] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -293,7 +317,10 @@ export default function AdminDestinationsPage() {
               <button
                 type="button"
                 disabled={isSaving}
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  cleanupPreview();
+                  setIsModalOpen(false);
+                }}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -315,7 +342,7 @@ export default function AdminDestinationsPage() {
                 <input
                   type="text"
                   required
-                  value={formName}
+                  value={formName ?? ''}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g. Mumbai"
                   className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs text-[#14243A] focus:outline-hidden focus:border-[#0B2C50]"
@@ -328,54 +355,19 @@ export default function AdminDestinationsPage() {
                 </label>
                 <textarea
                   rows={2}
-                  value={formDescription}
+                  value={formDescription ?? ''}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="e.g. Financial capital, Marine Drive & Gateway of India."
                   className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs text-[#14243A] focus:outline-hidden focus:border-[#0B2C50] resize-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#14243A] mb-1">
-                  Upload Destination Image
-                </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-[#E2E8F0] hover:border-[#0B2C50] rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-50/60 mb-2"
-                >
-                  <Upload className="w-6 h-6 text-[#0B2C50] mx-auto mb-1" />
-                  <span className="text-xs font-bold text-[#14243A] block">
-                    Choose photo file (Max 5 MB)
-                  </span>
-                </div>
-
-                <div className="relative w-full h-28 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                  <Image
-                    src={imagePreviewUrl || formImageUrl}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#14243A] mb-1">
-                  Image Path / URL
-                </label>
-                <input
-                  type="text"
-                  value={formImageUrl}
-                  onChange={(e) => setFormImageUrl(e.target.value)}
-                  placeholder="/images/destinations/mumbai.jpg"
-                  className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs text-[#14243A] focus:outline-hidden focus:border-[#0B2C50]"
+              <div className="pt-2">
+                <ImageFieldManager
+                  label="Destination Image"
+                  value={formImageUrl || DESTINATION_IMAGES.mumbai}
+                  onChange={setFormImageUrl}
+                  helpText="Provide a public HTTP/HTTPS URL or upload an image file from your computer."
                 />
               </div>
 
@@ -400,7 +392,10 @@ export default function AdminDestinationsPage() {
                 <button
                   type="button"
                   disabled={isSaving}
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    cleanupPreview();
+                    setIsModalOpen(false);
+                  }}
                   className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel

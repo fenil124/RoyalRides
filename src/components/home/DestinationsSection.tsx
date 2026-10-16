@@ -4,6 +4,7 @@ import Image from '@/components/common/Image';
 import { motion, type Variants } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Destination } from '@/types';
+import { DESTINATION_IMAGES } from '@/lib/constants/default-images';
 
 interface DestinationsSectionProps {
   destinations: Destination[];
@@ -16,32 +17,32 @@ export function DestinationsSection({ destinations, onSelectDestination }: Desti
     {
       id: 'd1',
       name: 'Mumbai',
-      image_url: '/images/destinations/mumbai.jpg',
+      image_url: DESTINATION_IMAGES.mumbai,
     },
     {
       id: 'd2',
       name: 'Lonavala',
-      image_url: '/images/destinations/lonavala.jpg',
+      image_url: DESTINATION_IMAGES.lonavala,
     },
     {
       id: 'd3',
       name: 'Nashik',
-      image_url: '/images/destinations/nashik.jpg',
+      image_url: DESTINATION_IMAGES.nashik,
     },
     {
       id: 'd4',
       name: 'Statue of Unity',
-      image_url: '/images/destinations/statue-of-unity.jpg',
+      image_url: DESTINATION_IMAGES['statue-of-unity'],
     },
     {
       id: 'd5',
       name: 'Somnath',
-      image_url: '/images/destinations/somnath.jpg',
+      image_url: DESTINATION_IMAGES.somnath,
     },
     {
       id: 'd6',
       name: 'Diu',
-      image_url: '/images/destinations/diu.jpg',
+      image_url: DESTINATION_IMAGES.diu,
     },
   ];
 
@@ -126,6 +127,7 @@ export function DestinationsSection({ destinations, onSelectDestination }: Desti
                 src={dest.image_url}
                 alt={dest.name}
                 fill
+                unoptimized={Boolean(dest.image_url?.startsWith('http') || dest.image_url?.startsWith('data:'))}
                 className="object-cover group-hover:scale-108 transition-transform duration-500"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
               />

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { DataStore } from '@/lib/data-store';
 import { Review } from '@/types';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
+import { ImageFieldManager } from '@/components/admin/ImageFieldManager';
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -24,6 +25,7 @@ export default function AdminReviewsPage() {
   const [formName, setFormName] = useState('');
   const [formRating, setFormRating] = useState(5);
   const [formText, setFormText] = useState('');
+  const [formAvatarUrl, setFormAvatarUrl] = useState('');
   const [formPublished, setFormPublished] = useState(true);
 
   const loadReviews = useCallback(async () => {
@@ -48,6 +50,7 @@ export default function AdminReviewsPage() {
     setFormName('');
     setFormRating(5);
     setFormText('');
+    setFormAvatarUrl('');
     setFormPublished(true);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -58,6 +61,7 @@ export default function AdminReviewsPage() {
     setFormName(rev.customer_name);
     setFormRating(rev.rating);
     setFormText(rev.review_text);
+    setFormAvatarUrl(rev.avatar_url || '');
     setFormPublished(rev.is_published);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -105,6 +109,7 @@ export default function AdminReviewsPage() {
         customer_name: formName.trim(),
         rating: Number(formRating),
         review_text: formText.trim(),
+        avatar_url: formAvatarUrl.trim() || null,
         is_published: formPublished,
       });
 
@@ -222,8 +227,12 @@ export default function AdminReviewsPage() {
                 {/* Header: Customer Initial, Name, and Status */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#0B2C50] text-[#F5B936] font-black text-sm flex items-center justify-center shrink-0">
-                      {rev.customer_name.charAt(0)}
+                    <div className="w-10 h-10 rounded-full bg-[#0B2C50] text-[#F5B936] font-black text-sm flex items-center justify-center shrink-0 overflow-hidden">
+                      {rev.avatar_url ? (
+                        <img src={rev.avatar_url} alt={rev.customer_name} className="w-full h-full object-cover" />
+                      ) : (
+                        rev.customer_name.charAt(0)
+                      )}
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-[#14243A]">
@@ -383,6 +392,15 @@ export default function AdminReviewsPage() {
                   onChange={(e) => setFormText(e.target.value)}
                   placeholder="Customer feedback on driver, car cleanliness, punctuality..."
                   className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs text-[#14243A] focus:outline-hidden focus:border-[#0B2C50] resize-none"
+                />
+              </div>
+
+              <div className="pt-1">
+                <ImageFieldManager
+                  label="Reviewer Photo (Optional)"
+                  value={formAvatarUrl}
+                  onChange={setFormAvatarUrl}
+                  helpText="Upload a customer photo or paste an image URL. If omitted, initials will display."
                 />
               </div>
 

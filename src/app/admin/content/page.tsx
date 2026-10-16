@@ -5,6 +5,8 @@ import Image from '@/components/common/Image';
 import { Edit, Save, CheckCircle2, X } from 'lucide-react';
 import { DataStore } from '@/lib/data-store';
 import { HomepageSection } from '@/types';
+import { ImageFieldManager } from '@/components/admin/ImageFieldManager';
+import { DEFAULT_HERO_BG, DEFAULT_ABOUT_IMG } from '@/lib/constants/default-images';
 
 export default function AdminContentPage() {
   const [content, setContent] = useState<Record<string, HomepageSection>>({});
@@ -70,7 +72,7 @@ export default function AdminContentPage() {
       key: 'hero',
       name: 'Hero Section',
       desc: 'Update headline, subtitle, badge and background image',
-      thumbnail: content['hero']?.image_url || '/images/hero-bg.jpg',
+      thumbnail: content['hero']?.image_url || DEFAULT_HERO_BG,
     },
     {
       key: 'features',
@@ -82,7 +84,7 @@ export default function AdminContentPage() {
       key: 'about',
       name: 'About Section',
       desc: 'Update company bio, standards, and safety description',
-      thumbnail: null,
+      thumbnail: content['about']?.image_url || DEFAULT_ABOUT_IMG,
     },
     {
       key: 'contact',
@@ -214,17 +216,15 @@ export default function AdminContentPage() {
                 />
               </div>
 
-              {editingKey === 'hero' && (
-                <div>
-                  <label className="block text-xs font-bold text-[#344054] mb-1">
-                    Hero Background Image Path
-                  </label>
-                  <input
-                    type="text"
+              {(editingKey === 'hero' || editingKey === 'about') && (
+                <div className="pt-2">
+                  <ImageFieldManager
+                    label={editingKey === 'hero' ? 'Hero Background Image' : 'About Section Banner Image'}
                     value={formImageUrl}
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="/images/hero-bg.jpg"
-                    className="w-full px-3 py-2 rounded-xl border border-[#D0D5DD] text-xs text-[#101828] focus:outline-hidden focus:border-[#082B50]"
+                    onChange={setFormImageUrl}
+                    helpText={editingKey === 'hero' 
+                      ? 'Upload an image or paste a URL for the cinematic homepage hero background.'
+                      : 'Upload an image or paste a URL for the About section banner.'}
                   />
                 </div>
               )}

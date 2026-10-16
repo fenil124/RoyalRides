@@ -1,17 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 
 interface HeaderProps {
   onOpenInquiry?: () => void;
+  phone?: string;
+  whatsapp?: string;
+  logoUrl?: string | null;
 }
 
-export function Header({ onOpenInquiry }: HeaderProps) {
+export function Header({
+  onOpenInquiry,
+  logoUrl,
+}: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,19 +31,21 @@ export function Header({ onOpenInquiry }: HeaderProps) {
   }, []);
 
   const navLinks = [
-    { label: 'Home', href: '#home' },
-    { label: 'About Us', href: '#about' },
-    { label: 'Our Fleet', href: '#fleet' },
-    { label: 'Popular Routes', href: '#routes' },
-    { label: 'Destinations', href: '#destinations' },
-    { label: 'Reviews', href: '#reviews' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'Home', href: '/#home' },
+    { label: 'About Us', href: '/#about' },
+    { label: 'Our Fleet', href: '/#fleet' },
+    { label: 'Popular Routes', href: '/#routes' },
+    { label: 'Destinations', href: '/#destinations' },
+    { label: 'Reviews', href: '/#reviews' },
+    { label: 'Contact', href: '/#contact' },
   ];
+
+  const shouldShowSolidBg = !isHome || isScrolled;
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 select-none ${
-        isScrolled
+        shouldShowSolidBg
           ? 'bg-[#071A35]/95 backdrop-blur-md border-b border-white/10 shadow-xl py-3'
           : 'bg-transparent py-4 sm:py-5'
       }`}
@@ -44,7 +54,7 @@ export function Header({ onOpenInquiry }: HeaderProps) {
         <div className="flex items-center justify-between h-12">
           {/* Logo on the left */}
           <Link to="/" className="flex items-center group">
-            <Logo variant="dark" size="sm" />
+            <Logo variant="dark" size="sm" logoUrl={logoUrl} />
           </Link>
 
           {/* Navigation links in the center */}

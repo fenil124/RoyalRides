@@ -1,12 +1,51 @@
-export type CarType = 'MPV' | 'Sedan' | 'Luxury Van' | 'SUV';
+export type CarType = 'MPV' | 'Sedan' | 'Luxury Van' | 'SUV' | 'Luxury' | 'Tempo Traveller';
 
 export interface Car {
   id: string;
   name: string;
+  slug?: string;
+  manufacturer?: string;
+  model?: string;
   car_type: string;
+  category?: string; // MPV, Sedan, Luxury, SUV, Tempo Traveller
   seating_capacity: string;
   image_url: string;
   hero_image_url?: string;
+  gallery_images?: string[];
+  badge?: string; // e.g. "MOST POPULAR", "FAMILY FAVORITE", "MOST ECONOMICAL", "PREMIUM VAN"
+  rating?: number;
+  review_count?: string | number;
+  completed_tours?: string;
+  tagline?: string;
+  short_description?: string;
+  description?: string;
+  highlights?: string[];
+  key_features?: string[];
+  amenities?: string[];
+  
+  // Pricing
+  outstation_price_per_km?: number | null;
+  daily_package_price?: number | null;
+  min_km_per_day?: string;
+  package_hours?: string;
+  package_included_km?: string;
+  driver_allowance?: number | null;
+  extra_km_charge?: number | null;
+  extra_hour_charge?: number | null;
+
+  // Technical specifications & telemetry
+  fuel_type?: string;
+  transmission?: string;
+  engine?: string;
+  horsepower?: string;
+  max_speed?: string;
+  driver_option?: string;
+  luggage_capacity?: string;
+
+  // SEO & metadata
+  meta_title?: string;
+  meta_description?: string;
+
   is_active: boolean;
   is_hero_featured: boolean;
   display_order: number;

@@ -5,6 +5,7 @@ import { Save, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 import { DataStore } from '@/lib/data-store';
 import { SiteSettings } from '@/types';
+import { ImageFieldManager } from '@/components/admin/ImageFieldManager';
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'seo'>('general');
@@ -14,6 +15,7 @@ export default function AdminSettingsPage() {
   // Form states
   const [agencyName, setAgencyName] = useState('RoyalRides Travels');
   const [tagline, setTagline] = useState('Comfortable Rides for Every Journey');
+  const [logoUrl, setLogoUrl] = useState('');
   const [phone, setPhone] = useState('+91 98765 43210');
   const [whatsapp, setWhatsapp] = useState('+91 98765 43210');
   const [email, setEmail] = useState('contact@royalridestravels.com');
@@ -28,6 +30,7 @@ export default function AdminSettingsPage() {
       const data = await DataStore.getSettings();
       setAgencyName(data.agency_name || 'RoyalRides Travels');
       setTagline(data.tagline || 'Comfortable Rides for Every Journey');
+      setLogoUrl(data.logo_url || '');
       setPhone(data.phone || '+91 98765 43210');
       setWhatsapp(data.whatsapp || '+91 98765 43210');
       setEmail(data.email || 'contact@royalridestravels.com');
@@ -54,6 +57,7 @@ export default function AdminSettingsPage() {
     await DataStore.saveSettings({
       agency_name: agencyName,
       tagline,
+      logo_url: logoUrl.trim() || null,
       phone,
       whatsapp,
       email,
@@ -178,23 +182,17 @@ export default function AdminSettingsPage() {
                 />
               </div>
 
-              {/* Logo preview matching Reference 3 panel 10 */}
+              {/* Logo preview & manager matching Reference 3 panel 10 */}
               <div className="pt-2">
-                <label className="block text-xs font-bold text-[#344054] mb-2">
-                  Logo
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
-                      Choose File
-                      <input type="file" className="hidden" accept="image/*" />
-                    </label>
-                    <span className="text-xs text-slate-400">No file chosen</span>
-                  </div>
-
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                    <Logo variant="light" size="sm" />
-                  </div>
+                <ImageFieldManager
+                  label="Agency Logo"
+                  value={logoUrl}
+                  onChange={setLogoUrl}
+                  helpText="Upload an image logo or paste a public URL. Leave empty to use the default RoyalRides vector brand mark."
+                />
+                <div className="mt-3 p-3 bg-[#071A35] rounded-xl flex items-center justify-between border border-white/10">
+                  <span className="text-xs font-medium text-slate-300">Live Header &amp; Footer Preview:</span>
+                  <Logo variant="dark" size="sm" logoUrl={logoUrl} />
                 </div>
               </div>
             </>

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { MapPin, ChevronRight, ArrowRight } from 'lucide-react';
 import { Route, Car } from '@/types';
 import { formatINR } from '@/lib/utils';
+import { DEFAULT_AIRPORT_TRANSFER } from '@/lib/constants/default-images';
 
 interface RoutesSectionProps {
   routes: Route[];
@@ -13,6 +14,11 @@ interface RoutesSectionProps {
 }
 
 export function RoutesSection({ routes, onSelectRoute }: RoutesSectionProps) {
+  const airportRoute = routes.find(
+    (r) => r.destination.toLowerCase().includes('airport') || r.origin.toLowerCase().includes('airport')
+  );
+  const airportImageUrl = airportRoute?.image_url || DEFAULT_AIRPORT_TRANSFER;
+
   // 4 Canonical Fixed Routes matching Reference 2 & 3
   const canonicalRoutes = [
     {
@@ -137,9 +143,10 @@ export function RoutesSection({ routes, onSelectRoute }: RoutesSectionProps) {
             className="lg:col-span-5 relative rounded-2xl overflow-hidden min-h-[260px] lg:min-h-[290px] shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col justify-end p-6 border border-slate-100"
           >
             <Image
-              src="/images/airport-transfer.jpg"
+              src={airportImageUrl}
               alt="Airport Transfers"
               fill
+              unoptimized={Boolean(airportImageUrl?.startsWith('http') || airportImageUrl?.startsWith('data:'))}
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 1024px) 100vw, 40vw"
             />

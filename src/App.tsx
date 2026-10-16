@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 import HomePage from '@/app/page';
+import VehicleDetailsPage from '@/app/fleet/VehicleDetailsPage';
 import AdminLoginPage from '@/app/admin/login/page';
 import AdminLayout from '@/app/admin/layout';
 import AdminDashboardPage from '@/app/admin/page';
@@ -21,11 +22,14 @@ export function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/fleet/:slug" element={<VehicleDetailsPage />} />
+        <Route path="/fleet" element={<Navigate to="/#fleet" replace />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
+          <Route path="vehicles" element={<CarsPage />} />
           <Route path="cars" element={<CarsPage />} />
           <Route path="routes" element={<RoutesPage />} />
           <Route path="destinations" element={<DestinationsPage />} />
